@@ -1,0 +1,6 @@
+{
+  "name": "محاسب العلوة | Alwa Accountant",
+  "description": "تطبيق محاسبة وفواتير تجارية متكامل لإدارة العلوات الزراعية والمحاصيل والبيوعات والمستحقات",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
