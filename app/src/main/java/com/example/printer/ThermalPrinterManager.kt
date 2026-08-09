@@ -42,6 +42,15 @@ object ThermalPrinterManager {
     val ESC_NORMAL_SIZE = byteArrayOf(0x1D, 0x21, 0x00)
     val ESC_FEED_AND_CUT = byteArrayOf(0x1D, 0x56, 0x42, 0x00)
 
+    fun isBluetoothAvailable(): Boolean {
+        return try {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            adapter != null && adapter.isEnabled
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun startDiscovery() {
         try {
@@ -104,7 +113,7 @@ object ThermalPrinterManager {
 
         val adapter = BluetoothAdapter.getDefaultAdapter()
         if (adapter == null || !adapter.isEnabled) {
-            Log.e(TAG, "Bluetooth adapter is null or disabled")
+            Log.w(TAG, "Bluetooth adapter is null or disabled")
             return false
         }
 

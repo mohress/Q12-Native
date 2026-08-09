@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -211,55 +212,113 @@ fun ImportScreen(
             }
         }
 
-        // 2. Search & Filter Chips Bar
+        // 2. Ultra-Compact Search & Filter Chips Bar
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(2.dp, RoundedCornerShape(16.dp)),
-                    placeholder = { Text("ابحث باسم الفلاح أو رمز الفاتورة...", fontSize = 13.sp, fontFamily = CairoFontFamily) },
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = MediumForestGreen,
-                        unfocusedBorderColor = GlassBorder
-                    )
-                )
-
-                val filterChips = listOf("الجميع", "قيد البيع ⏳", "جاهز للتسوية ⚠️")
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(filterChips) { chip ->
-                        val isSelected = activeFilter == chip
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onFilterChange(chip) },
-                            label = {
-                                Text(
-                                    text = chip,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color.White else TextPrimaryDark,
-                                    fontFamily = CairoFontFamily
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = DarkForestGreen,
-                                containerColor = CardSurfaceWhite
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                if (maxWidth > 600.dp) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp)
+                                .shadow(1.dp, RoundedCornerShape(12.dp)),
+                            placeholder = { Text("ابحث باسم الفلاح أو رمز الفاتورة...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = MediumForestGreen,
+                                unfocusedBorderColor = GlassBorder
                             ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = GlassBorder
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
                         )
+
+                        val filterChips = listOf("الجميع", "قيد البيع ⏳", "جاهز للتسوية ⚠️")
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            filterChips.forEach { chip ->
+                                val isSelected = activeFilter == chip
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onFilterChange(chip) },
+                                    label = {
+                                        Text(
+                                            text = chip,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) Color.White else TextPrimaryDark,
+                                            fontFamily = CairoFontFamily
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = DarkForestGreen,
+                                        containerColor = CardSurfaceWhite
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.height(36.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .shadow(1.dp, RoundedCornerShape(12.dp)),
+                            placeholder = { Text("ابحث باسم الفلاح أو رمز الفاتورة...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = MediumForestGreen,
+                                unfocusedBorderColor = GlassBorder
+                            ),
+                            textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
+                        )
+
+                        val filterChips = listOf("الجميع", "قيد البيع ⏳", "جاهز للتسوية ⚠️")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(filterChips) { chip ->
+                                val isSelected = activeFilter == chip
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onFilterChange(chip) },
+                                    label = {
+                                        Text(
+                                            text = chip,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) Color.White else TextPrimaryDark,
+                                            fontFamily = CairoFontFamily
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = DarkForestGreen,
+                                        containerColor = CardSurfaceWhite
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = GlassBorder
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.height(34.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -309,195 +368,201 @@ fun ImportInvoiceCard(
             )
 
             // Card Inner Content Container
+            val isTablet = LocalConfiguration.current.screenWidthDp > 600
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
+                    .then(
+                        if (isTablet) Modifier
+                        else Modifier.horizontalScroll(rememberScrollState())
+                    )
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = if (isTablet) Arrangement.SpaceBetween else Arrangement.spacedBy(10.dp)
             ) {
-                // 1. Far Right ID Badge & Date
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.widthIn(min = 75.dp)
-                ) {
-                    val codeClean = if (invoice.code.contains("#")) invoice.code else "ID: #${invoice.code.takeLast(4)}"
-                    Surface(
-                        color = DarkForestGreen,
-                        shape = RoundedCornerShape(6.dp)
+                    // 1. Far Right ID Badge & Date
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = if (isTablet) Modifier.width(85.dp) else Modifier.widthIn(min = 75.dp)
                     ) {
+                        val codeClean = if (invoice.code.contains("#")) invoice.code else "ID: #${invoice.code.takeLast(4)}"
+                        Surface(
+                            color = DarkForestGreen,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = codeClean,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = CairoFontFamily,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                        val dateOnly = invoice.date.split(" ").firstOrNull() ?: invoice.date
                         Text(
-                            text = codeClean,
-                            color = Color.White,
+                            text = dateOnly,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = CairoFontFamily,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            color = TextSecondaryMuted,
+                            fontFamily = CairoFontFamily
                         )
                     }
-                    val dateOnly = invoice.date.split(" ").firstOrNull() ?: invoice.date
-                    Text(
-                        text = dateOnly,
-                        fontSize = 11.sp,
-                        color = TextSecondaryMuted,
-                        fontFamily = CairoFontFamily
-                    )
-                }
 
-                // 2. Farmer/Supplier Name & Vehicle Type
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.widthIn(min = 140.dp, max = 180.dp)
-                ) {
-                    Text(
-                        text = invoice.farmerName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark,
-                        fontFamily = CairoFontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "نوع السيارة: ${invoice.vehicleType}",
-                        fontSize = 11.5.sp,
-                        color = TextSecondaryMuted,
-                        fontFamily = CairoFontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    // 2. Farmer/Supplier Name & Vehicle Type
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = if (isTablet) Modifier.weight(1.2f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 140.dp, max = 180.dp)
+                    ) {
+                        Text(
+                            text = invoice.farmerName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryDark,
+                            fontFamily = CairoFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "نوع السيارة: ${invoice.vehicleType}",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryMuted,
+                            fontFamily = CairoFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
-                // 3. Crops Stack (Pills Container)
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.widthIn(min = 210.dp, max = 270.dp)
-                ) {
-                    invoice.crops.forEach { crop ->
-                        Surface(
-                            color = Color(0xFFF4F8F5),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Color(0xFFD0E4D7))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // 3. Crops Stack (Pills Container)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = if (isTablet) Modifier.weight(2f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 210.dp, max = 270.dp)
+                    ) {
+                        invoice.crops.forEach { crop ->
+                            Surface(
+                                color = Color(0xFFF4F8F5),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color(0xFFD0E4D7))
                             ) {
-                                val emoji = getCropEmoji(crop.cropName)
-                                Text(
-                                    text = "$emoji ${crop.cropName}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimaryDark,
-                                    fontFamily = CairoFontFamily,
-                                    maxLines = 1
-                                )
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Surface(
-                                    color = Color(0xFFD5E8DB),
-                                    shape = RoundedCornerShape(8.dp)
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
+                                    val emoji = getCropEmoji(crop.cropName)
                                     Text(
-                                        text = "${String.format("%,d", crop.netWeightKg.toInt())} كجم",
-                                        fontSize = 11.sp,
+                                        text = "$emoji ${crop.cropName}",
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = DarkForestGreen,
+                                        color = TextPrimaryDark,
                                         fontFamily = CairoFontFamily,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        maxLines = 1
                                     )
-                                }
 
-                                Surface(
-                                    color = Color(0xFFD5E8DB),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = "${crop.boxCount} صندوق",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = DarkForestGreen,
-                                        fontFamily = CairoFontFamily,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    Surface(
+                                        color = Color(0xFFD5E8DB),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "${String.format("%,d", crop.netWeightKg.toInt())} كجم",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = DarkForestGreen,
+                                            fontFamily = CairoFontFamily,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    Surface(
+                                        color = Color(0xFFD5E8DB),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "${crop.boxCount} صندوق",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = DarkForestGreen,
+                                            fontFamily = CairoFontFamily,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // 4. Sales Progress & Remaining Info
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.widthIn(min = 150.dp, max = 190.dp)
-                ) {
-                    val percentInt = (invoice.progressPercent * 100).toInt()
-                    Text(
-                        text = "نسبة المبيعات: $percentInt%",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark,
-                        fontFamily = CairoFontFamily
-                    )
-                    LinearProgressIndicator(
-                        progress = invoice.progressPercent,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = DarkForestGreen,
-                        trackColor = Color(0xFFE0E0E0)
-                    )
-                    val totalKg = invoice.crops.sumOf { it.netWeightKg }.toInt()
-                    val totalBoxes = invoice.crops.sumOf { it.boxCount }
-                    val remainingKg = (totalKg * (1 - invoice.progressPercent)).toInt()
-                    val remainingBoxes = (totalBoxes * (1 - invoice.progressPercent)).toInt()
-                    Text(
-                        text = "(متبقي: ${String.format("%,d", remainingKg)} كجم / $remainingBoxes صندوق)",
-                        fontSize = 11.sp,
-                        color = TextSecondaryMuted,
-                        fontFamily = CairoFontFamily
-                    )
-                }
-
-                // 5. Status Badge (⏳ قيد البيع)
-                Surface(
-                    color = Color(0xFFFFF8E1),
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFFE082))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // 4. Sales Progress & Remaining Info
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = if (isTablet) Modifier.weight(1.3f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 150.dp, max = 190.dp)
                     ) {
-                        Text("⏳", fontSize = 12.sp)
+                        val percentInt = (invoice.progressPercent * 100).toInt()
                         Text(
-                            text = invoice.status,
-                            color = Color(0xFFF57F17),
+                            text = "نسبة المبيعات: $percentInt%",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
+                            color = TextPrimaryDark,
+                            fontFamily = CairoFontFamily
+                        )
+                        LinearProgressIndicator(
+                            progress = { invoice.progressPercent },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = DarkForestGreen,
+                            trackColor = Color(0xFFE0E0E0)
+                        )
+                        val totalKg = invoice.crops.sumOf { it.netWeightKg }.toInt()
+                        val totalBoxes = invoice.crops.sumOf { it.boxCount }
+                        val remainingKg = (totalKg * (1 - invoice.progressPercent)).toInt()
+                        val remainingBoxes = (totalBoxes * (1 - invoice.progressPercent)).toInt()
+                        Text(
+                            text = "(متبقي: ${String.format("%,d", remainingKg)} كجم / $remainingBoxes صندوق)",
+                            fontSize = 11.sp,
+                            color = TextSecondaryMuted,
                             fontFamily = CairoFontFamily
                         )
                     }
-                }
 
-                // Dotted Divider Line
-                DottedVerticalDivider(
-                    modifier = Modifier
-                        .height(42.dp)
-                        .width(1.dp)
-                )
+                    // 5. Status Badge (⏳ قيد البيع)
+                    Surface(
+                        color = Color(0xFFFFF8E1),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFE082))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("⏳", fontSize = 12.sp)
+                            Text(
+                                text = invoice.status,
+                                color = Color(0xFFF57F17),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = CairoFontFamily
+                            )
+                        }
+                    }
 
-                // 6. Action Buttons Column (Far Left: حذف | تفاصيل)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    // Dotted Divider Line
+                    DottedVerticalDivider(
+                        modifier = Modifier
+                            .height(42.dp)
+                            .width(1.dp)
+                    )
+
+                    // 6. Action Buttons Column
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = if (isTablet) Modifier.padding(start = 4.dp) else Modifier
+                    ) {
                     // Delete Button
                     OutlinedButton(
                         onClick = { onDeleteInvoice(invoice.id) },

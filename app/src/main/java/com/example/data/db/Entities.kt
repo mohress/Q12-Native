@@ -106,7 +106,10 @@ data class AlwaSettingsEntity(
     val fontScale: Float = 1.0f,
     val pinCode: String = "1234",
     val receiptCopies: Int = 1,
-    val receiptFooterNote: String = "البضاعة المباعة لا ترد ولا تستبدل بعد مغادرة العلوة"
+    val receiptFooterNote: String = "البضاعة المباعة لا ترد ولا تستبدل بعد مغادرة العلوة",
+    val lastPrinterAddress: String = "00:11:22:33:44:55",
+    val lastPrinterName: String = "RPP02N Thermal POS (58mm)",
+    val autoConnectPrinter: Boolean = true
 )
 
 // Helpers to convert domain models <-> entities & JSON string conversions

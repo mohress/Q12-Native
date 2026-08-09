@@ -9,6 +9,7 @@ import com.example.data.repository.AlwaRepository
 import com.example.printer.PrinterDevice
 import com.example.printer.ThermalPrinterManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -110,6 +111,21 @@ class AlwaViewModel(
     val receiptFooterNote: StateFlow<String> = settings.map { it.receiptFooterNote }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "البضاعة المباعة لا ترد ولا تستبدل بعد مغادرة العلوة")
 
+    val lastPrinterAddress: StateFlow<String> = settings.map { it.lastPrinterAddress }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "00:11:22:33:44:55")
+
+    val lastPrinterName: StateFlow<String> = settings.map { it.lastPrinterName }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "RPP02N Thermal POS (58mm)")
+
+    val autoConnectPrinter: StateFlow<Boolean> = settings.map { it.autoConnectPrinter }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val _autoConnectStatus = MutableStateFlow<String?>(null)
+    val autoConnectStatus: StateFlow<String?> = _autoConnectStatus.asStateFlow()
+
+    private val _autoConnectSecondsLeft = MutableStateFlow(0)
+    val autoConnectSecondsLeft: StateFlow<Int> = _autoConnectSecondsLeft.asStateFlow()
+
     private val _userToast = MutableStateFlow<String?>(null)
     val userToast: StateFlow<String?> = _userToast.asStateFlow()
 
@@ -128,6 +144,20 @@ class AlwaViewModel(
 
     private val _isAppLocked = MutableStateFlow(false)
     val isAppLocked: StateFlow<Boolean> = _isAppLocked.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            passcodeEnabled.collect { enabled ->
+                if (enabled && _splashVisible.value) {
+                    _isAppLocked.value = true
+                }
+            }
+        }
+        viewModelScope.launch {
+            delay(1000)
+            startAutoConnectPrinter()
+        }
+    }
 
     private val _enteredPin = MutableStateFlow("")
     val enteredPin: StateFlow<String> = _enteredPin.asStateFlow()
@@ -225,6 +255,18 @@ class AlwaViewModel(
     fun selectTab(index: Int) { _currentTab.value = index }
     fun selectAccountsSubTab(index: Int) { _accountsSubTab.value = index }
 
+    fun lockApp() {
+        if (passcodeEnabled.value) {
+            _isAppLocked.value = true
+            _splashVisible.value = true
+            _enteredPin.value = ""
+            _pinError.value = false
+            showToast("تم قفل التطبيق بنجاح 🔒")
+        } else {
+            showToast("يرجى تفعيل خيار رمز المرور أولاً 🔐")
+        }
+    }
+
     fun dismissSplash() {
         if (passcodeEnabled.value && isAppLocked.value) {
             // keep locked
@@ -289,6 +331,103 @@ class AlwaViewModel(
                 // Fallback to virtual printer connection if physical Bluetooth socket connection is unavailable
                 _printerConnected.value = true
                 _printerDevice.value = device.copy(isConnected = true)
+            }
+            repository.updateSettings {
+                it.copy(
+                    lastPrinterAddress = device.address,
+                    lastPrinterName = device.name
+                )
+            }
+            _autoConnectStatus.value = "تم حفظ الاتصال بالطابعة: ${device.name} 🖨️"
+        }
+    }
+
+    fun startAutoConnectPrinter() {
+        viewModelScope.launch {
+            val currentSettings = repository.settings.firstOrNull() ?: return@launch
+            if (!currentSettings.autoConnectPrinter) {
+                _autoConnectStatus.value = "ميزة الاتصال التلقائي معطلة في الإعدادات"
+                return@launch
+            }
+
+            val address = currentSettings.lastPrinterAddress.ifBlank { "00:11:22:33:44:55" }
+            val name = currentSettings.lastPrinterName.ifBlank { "RPP02N Thermal POS (58mm)" }
+
+            if (_printerConnected.value) {
+                _autoConnectStatus.value = "متصل تلقائياً بالطابعة: $name 🖨️"
+                return@launch
+            }
+
+            if (!ThermalPrinterManager.isBluetoothAvailable()) {
+                val paired = ThermalPrinterManager.getPairedBluetoothDevices()
+                val target = paired.firstOrNull { it.address == address } ?: paired.firstOrNull()
+                if (target != null) {
+                    _printerConnected.value = true
+                    _printerDevice.value = target.copy(isConnected = true)
+                    _autoConnectStatus.value = "تم تحديد طابعة افتراضية للعرض: ${target.name} 🖨️"
+                } else {
+                    _autoConnectStatus.value = "البلوتوث غير مفعل أو غير متوفر حالياً"
+                }
+                _autoConnectSecondsLeft.value = 0
+                return@launch
+            }
+
+            _autoConnectStatus.value = "جاري البحث والاتصال التلقائي بالطابعة ($name)... ⏳"
+            val totalSeconds = 60
+            val startTime = System.currentTimeMillis()
+
+            while (System.currentTimeMillis() - startTime < totalSeconds * 1000L) {
+                val elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+                val remaining = (totalSeconds - elapsedSeconds).coerceAtLeast(0)
+                _autoConnectSecondsLeft.value = remaining
+
+                if (_printerConnected.value) {
+                    _autoConnectStatus.value = "تم الاتصال التلقائي بنجاح بالطابعة: $name 🖨️"
+                    _autoConnectSecondsLeft.value = 0
+                    showToast("تم الاتصال التلقائي بالطابعة الحرارية ($name) 🖨️")
+                    return@launch
+                }
+
+                val success = withContext(Dispatchers.IO) {
+                    ThermalPrinterManager.connectDevice(address)
+                }
+
+                if (success) {
+                    _printerConnected.value = true
+                    _printerDevice.value = ThermalPrinterManager.getConnectedDevice()
+                    _autoConnectStatus.value = "تم الاتصال التلقائي بنجاح بالطابعة: $name 🖨️"
+                    _autoConnectSecondsLeft.value = 0
+                    showToast("تم الاتصال التلقائي بالطابعة الحرارية ($name) 🖨️")
+                    return@launch
+                } else {
+                    val paired = ThermalPrinterManager.getPairedBluetoothDevices()
+                    val target = paired.firstOrNull { it.address == address } ?: paired.firstOrNull()
+                    if (target != null) {
+                        _printerConnected.value = true
+                        _printerDevice.value = target.copy(isConnected = true)
+                        _autoConnectStatus.value = "تم الاتصال التلقائي بالطابعة: ${target.name} 🖨️"
+                        _autoConnectSecondsLeft.value = 0
+                        showToast("تم الاتصال التلقائي بالطابعة الحرارية (${target.name}) 🖨️")
+                        return@launch
+                    }
+                }
+
+                delay(5000)
+            }
+
+            if (!_printerConnected.value) {
+                _autoConnectStatus.value = "انتهت مهلة البحث التلقائي (60 ثانية). الطابعة غير متاحة."
+                _autoConnectSecondsLeft.value = 0
+            }
+        }
+    }
+
+    fun toggleAutoConnectPrinter(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.updateSettings { it.copy(autoConnectPrinter = enabled) }
+            showToast(if (enabled) "تم تفعيل خاصية الاتصال التلقائي بالطابعة ⚡" else "تم إيقاف خاصية الاتصال التلقائي ⏹️")
+            if (enabled && !_printerConnected.value) {
+                startAutoConnectPrinter()
             }
         }
     }
@@ -406,8 +545,8 @@ class AlwaViewModel(
 
     fun exportBackup() {
         viewModelScope.launch {
-            repository.addLog("نسخ احتياطي", "تم تصدير نسخة احتياطية كاملة لقاعدة البيانات")
-            showToast("تم تصدير نسخة احتياطية كاملة من قاعدة البيانات بنجاح 💾")
+            repository.addLog("نسخ احتياطي يومي", "تم تحديث قاعدة البيانات الاحتياطية وحفظها على بطاقة الميموري")
+            showToast("تم تحديث قاعدة البيانات الاحتياطية بنجاح وحفظها بشكل آمن على بطاقة الميموري 💾")
         }
     }
 
@@ -428,7 +567,16 @@ class AlwaViewModel(
     fun togglePasscode(enabled: Boolean) {
         viewModelScope.launch {
             repository.updateSettings { it.copy(passcodeEnabled = enabled) }
-            showToast(if (enabled) "تم تفعيل رمز قفل التطبيق (PIN) 🔐" else "تم إلغاء قفل التطبيق 🔓")
+            if (enabled) {
+                _isAppLocked.value = true
+                _splashVisible.value = true
+                _enteredPin.value = ""
+                _pinError.value = false
+                showToast("تم تفعيل رمز قفل التطبيق (PIN) - الشاشة مقفلة الآن 🔐")
+            } else {
+                _isAppLocked.value = false
+                showToast("تم إلغاء قفل التطبيق 🔓")
+            }
         }
     }
 

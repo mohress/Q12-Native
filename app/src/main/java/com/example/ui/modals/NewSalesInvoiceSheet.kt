@@ -1,18 +1,19 @@
 package com.example.ui.modals
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,30 +23,43 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.models.SaleCropItem
 import com.example.ui.theme.*
 
-data class EditableSaleCropRow(
-    var id: String = java.util.UUID.randomUUID().toString(),
-    var cropName: String = "طماطة النجف",
-    var boxCountText: String = "10",
-    var weightText: String = "250",
-    var priceText: String = "1200"
-) {
-    val boxCount: Int get() = boxCountText.toIntOrNull() ?: 1
-    val weightOrCount: Double get() = weightText.toDoubleOrNull() ?: 0.0
-    val unitPrice: Long get() = priceText.toLongOrNull() ?: 0L
-    val subtotal: Long get() = (weightOrCount * unitPrice).toLong()
-    val commission7: Long get() = (subtotal * 0.07).toLong()
-    val carryingFee: Long get() = (boxCount * 250L).coerceAtLeast(1000L)
+private data class CustomerSuggestion(
+    val name: String,
+    val phone: String,
+    val address: String
+)
+
+private enum class KeypadTarget {
+    WEIGHT, PRICE, DEFERRED_DAYS
 }
+
+private val sampleCustomerSuggestions = listOf(
+    CustomerSuggestion("محل الخضار الحديث - أبو زهراء", "07801122334", "المنصور - الشارع الرئيسي"),
+    CustomerSuggestion("محل البهادلي - أبو محمد", "07709988776", "علوة الرشيد - خان 12"),
+    CustomerSuggestion("سوق الفواكه - الكرادة", "07812345678", "الكرادة - داخل"),
+    CustomerSuggestion("مخزن الحمداني - أبو علي", "07901112233", "علوة بغداد المركزية"),
+    CustomerSuggestion("معرض البركة - أبو سيف", "07714455667", "سوق الشورجة - خان 5"),
+    CustomerSuggestion("أسواق الزهراء - أبو فاطمة", "07823344556", "زيونة - قرب النافورة")
+)
+
+private val sampleCrops = listOf(
+    "طماطة النجف", "بتيتة الموصل", "خيارات كربلاء", "تفاح أربيل",
+    "رمان ديالى", "بصل الزبير", "فلفل حلة", "بامية الكوت", "بطيخ سامراء", "موز سومر"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,281 +76,421 @@ fun NewSalesInvoiceSheet(
     formatIQD: (Long) -> String,
     modifier: Modifier = Modifier
 ) {
-    // 1. Customer State
     var customerName by remember { mutableStateOf("محل الخضار الحديث - أبو زهراء") }
-    var customerPhone by remember { mutableStateOf("07801122334") }
-    var customerAddress by remember { mutableStateOf("المنصور - الشارع الرئيسي") }
-    var customerDropdownExpanded by remember { mutableStateOf(false) }
+    var phone by remember { mutableStateOf("07801122334") }
+    var address by remember { mutableStateOf("المنصور - الشارع الرئيسي") }
+    var paymentType by remember { mutableStateOf("كاش") } // "كاش" or "آجل"
+    var deferredDays by remember { mutableStateOf(10) }
+    var customDaysText by remember { mutableStateOf("10") }
+    var isCustomDaysSelected by remember { mutableStateOf(false) }
 
-    val customerSuggestions = listOf(
-        "محل الخضار الحديث - أبو زهراء",
-        "مكتب الفواكه الذهبية - الحاج حسن",
-        "محلات البركة للجملة - أبو علي",
-        "أسواق الرافدين - أبو أحمد",
-        "محل الهداية - أبو حسين",
-        "محل النور - أبو جاسم"
-    )
+    var cropName by remember { mutableStateOf("طماطة النجف") }
+    var weightText by remember { mutableStateOf("250") }
+    var priceText by remember { mutableStateOf("1200") }
 
-    // 2. Crop Items State
-    val saleCropRows = remember {
+    var activeKeypadTarget by remember { mutableStateOf(KeypadTarget.WEIGHT) }
+
+    var showCustomerDropdown by remember { mutableStateOf(false) }
+    var showCropDropdown by remember { mutableStateOf(false) }
+
+    val saleItems = remember {
         mutableStateListOf(
-            EditableSaleCropRow(
-                cropName = "طماطة النجف",
-                boxCountText = "10",
-                weightText = "250",
-                priceText = "1200"
-            )
+            SaleCropItem("طماطة النجف", 250.0, 1200L)
         )
     }
 
-    val availableCropSuggestions = listOf(
-        "طماطة النجف",
-        "خيارات الحلة",
-        "بطاطا الموصل",
-        "رقي كربلاء",
-        "بصل الزبير",
-        "باذنجان كربلاء",
-        "تفاح أربيل",
-        "رمان الديالى",
-        "موز سومر",
-        "فلفل بعقوبة"
-    )
-
-    // 3. General Options & Payment State
-    var invoiceNotes by remember { mutableStateOf("") }
-    var paymentType by remember { mutableStateOf("آجل") } // Default active: "آجل"
-    var selectedMaturityOption by remember { mutableStateOf("10 أيام") } // "5 أيام", "10 أيام", "15 يوم", "مخصص"
-    var customDaysText by remember { mutableStateOf("20") }
-
-    val computedDeferredDays = when (selectedMaturityOption) {
-        "5 أيام" -> 5
-        "10 أيام" -> 10
-        "15 يوم" -> 15
-        else -> customDaysText.toIntOrNull() ?: 10
-    }
-
-    // 4. Financial Calculations
-    val goodsTotal = saleCropRows.sumOf { it.subtotal }
-    val commission7 = saleCropRows.sumOf { it.commission7 }
-    val totalCarryingFee = saleCropRows.sumOf { it.carryingFee }.coerceAtLeast(5000L)
-    val grandTotal = goodsTotal + commission7 + totalCarryingFee
+    val goodsTotal = saleItems.sumOf { it.totalAmountIQD }
+    val commission7 = (goodsTotal * 0.07).toLong()
+    val porterageFee = (saleItems.sumOf { it.weightOrCount } * 20).toLong().coerceAtLeast(5000L)
+    val grandTotal = goodsTotal + commission7 + porterageFee
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = BackgroundSoft,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        scrimColor = Color.Black.copy(alpha = 0.35f),
+        dragHandle = null,
+        modifier = modifier
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .fillMaxHeight(0.60f) // 60vh max height as requested
+                .border(
+                    BorderStroke(1.5.dp, Color(0x331B4332)),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                )
+                .background(BackgroundSoft, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
         ) {
-            val isWideScreen = maxWidth > 600.dp
+            val isWideScreen = maxWidth >= 640.dp
 
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
-                // Header Bar (Title & Close Button Top Left)
-                Row(
+                // Header (Mawjoom & Drag Handle & Title Bar)
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Top Drag Handle
+                    Box(
+                        modifier = Modifier
+                            .width(44.dp)
+                            .height(5.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFD1D5DB))
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = DarkForestGreen.copy(alpha = 0.12f)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
-                                contentDescription = null,
-                                tint = DarkForestGreen,
+                            Box(
                                 modifier = Modifier
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                            )
-                        }
-                        Column {
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(DarkForestGreen),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = GoldLicense,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                             Text(
                                 text = "إنشاء فاتورة بيع جديدة",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimaryDark
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkForestGreen,
+                                fontFamily = CairoFontFamily
                             )
-                            Text(
-                                text = "إدخال أصناف البضاعة المباعة واحتساب العمولات والدين",
-                                fontSize = 11.sp,
-                                color = TextSecondaryMuted
+                        }
+
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE2E8F0))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Close",
+                                tint = TextPrimaryDark,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
 
-                    // Close Button (X) Top Left
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "إغلاق",
-                            tint = TextPrimaryDark
-                        )
-                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = 10.dp),
+                        color = Color(0xFFE2E8F0)
+                    )
                 }
 
-                HorizontalDivider(color = GlassBorder)
-
-                // Scrollable Content Layout
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // Inner Content (Scrollable Split Grid or Single Column)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 10.dp, bottom = 16.dp)
                 ) {
-                    item {
-                        if (isWideScreen) {
-                            // Two Columns Side-by-Side for Landscape Tablet
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                // Column 1: Main Data & Invoice Crops
-                                Column(
-                                    modifier = Modifier.weight(1.2f),
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    CustomerHeaderGridSection(
-                                        customerName = customerName,
-                                        onCustomerNameChange = { customerName = it },
-                                        customerPhone = customerPhone,
-                                        onPhoneChange = { customerPhone = it },
-                                        customerAddress = customerAddress,
-                                        onAddressChange = { customerAddress = it },
-                                        customerSuggestions = customerSuggestions,
-                                        customerDropdownExpanded = customerDropdownExpanded,
-                                        onCustomerDropdownExpandedChange = { customerDropdownExpanded = it }
-                                    )
-
-                                    DynamicCropsListSection(
-                                        saleCropRows = saleCropRows,
-                                        availableCropSuggestions = availableCropSuggestions,
-                                        formatIQD = formatIQD
-                                    )
-
-                                    GeneralOptionsAndPaymentSection(
-                                        invoiceNotes = invoiceNotes,
-                                        onNotesChange = { invoiceNotes = it },
-                                        paymentType = paymentType,
-                                        onPaymentTypeChange = { paymentType = it },
-                                        selectedMaturityOption = selectedMaturityOption,
-                                        onMaturityOptionChange = { selectedMaturityOption = it },
-                                        customDaysText = customDaysText,
-                                        onCustomDaysChange = { customDaysText = it }
-                                    )
-                                }
-
-                                // Column 2: Financial Summary Premium Card
-                                Column(
-                                    modifier = Modifier.weight(0.8f),
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    FinancialSummaryCard(
-                                        goodsTotal = goodsTotal,
-                                        commission7 = commission7,
-                                        totalCarryingFee = totalCarryingFee,
-                                        grandTotal = grandTotal,
-                                        formatIQD = formatIQD,
-                                        onSubmit = {
-                                            if (customerName.isNotBlank() && saleCropRows.isNotEmpty()) {
-                                                val finalItems = saleCropRows.map { row ->
-                                                    SaleCropItem(
-                                                        cropName = row.cropName,
-                                                        weightOrCount = row.weightOrCount,
-                                                        unitPriceIQD = row.unitPrice
-                                                    )
-                                                }
-                                                onSubmit(
-                                                    customerName,
-                                                    customerPhone,
-                                                    customerAddress,
-                                                    paymentType,
-                                                    if (paymentType == "آجل") computedDeferredDays else 0,
-                                                    finalItems
-                                                )
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        } else {
-                            // Single Column Layout for Mobile
+                    if (isWideScreen) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            // Column 1: Main Form (Customer + Crops + Payment Options)
                             Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                                modifier = Modifier.weight(1.2f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                CustomerHeaderGridSection(
+                                CustomerDataSection(
                                     customerName = customerName,
-                                    onCustomerNameChange = { customerName = it },
-                                    customerPhone = customerPhone,
-                                    onPhoneChange = { customerPhone = it },
-                                    customerAddress = customerAddress,
-                                    onAddressChange = { customerAddress = it },
-                                    customerSuggestions = customerSuggestions,
-                                    customerDropdownExpanded = customerDropdownExpanded,
-                                    onCustomerDropdownExpandedChange = { customerDropdownExpanded = it }
+                                    onCustomerNameChange = {
+                                        customerName = it
+                                        showCustomerDropdown = true
+                                    },
+                                    phone = phone,
+                                    onPhoneChange = { phone = it },
+                                    address = address,
+                                    onAddressChange = { address = it },
+                                    showDropdown = showCustomerDropdown,
+                                    onDismissDropdown = { showCustomerDropdown = false },
+                                    onSelectSuggestion = { sugg ->
+                                        customerName = sugg.name
+                                        phone = sugg.phone
+                                        address = sugg.address
+                                        showCustomerDropdown = false
+                                    }
                                 )
 
-                                DynamicCropsListSection(
-                                    saleCropRows = saleCropRows,
-                                    availableCropSuggestions = availableCropSuggestions,
+                                CropEntrySection(
+                                    cropName = cropName,
+                                    onCropNameChange = {
+                                        cropName = it
+                                        showCropDropdown = true
+                                    },
+                                    showCropDropdown = showCropDropdown,
+                                    onDismissCropDropdown = { showCropDropdown = false },
+                                    weightText = weightText,
+                                    onWeightFocus = { activeKeypadTarget = KeypadTarget.WEIGHT },
+                                    onWeightChange = { weightText = it },
+                                    priceText = priceText,
+                                    onPriceFocus = { activeKeypadTarget = KeypadTarget.PRICE },
+                                    onPriceChange = { priceText = it },
+                                    activeTarget = activeKeypadTarget,
+                                    onAddCrop = {
+                                        if (cropName.isNotBlank()) {
+                                            saleItems.add(
+                                                SaleCropItem(
+                                                    cropName = cropName,
+                                                    weightOrCount = weightText.toDoubleOrNull() ?: 1.0,
+                                                    unitPriceIQD = priceText.toLongOrNull() ?: 1000L
+                                                )
+                                            )
+                                            weightText = ""
+                                            priceText = ""
+                                        }
+                                    },
+                                    saleItems = saleItems,
+                                    onRemoveCrop = { idx -> saleItems.removeAt(idx) },
                                     formatIQD = formatIQD
                                 )
 
-                                GeneralOptionsAndPaymentSection(
-                                    invoiceNotes = invoiceNotes,
-                                    onNotesChange = { invoiceNotes = it },
+                                PaymentAndTenureSection(
                                     paymentType = paymentType,
                                     onPaymentTypeChange = { paymentType = it },
-                                    selectedMaturityOption = selectedMaturityOption,
-                                    onMaturityOptionChange = { selectedMaturityOption = it },
+                                    deferredDays = deferredDays,
+                                    onDeferredDaysChange = { days ->
+                                        deferredDays = days
+                                        isCustomDaysSelected = false
+                                    },
+                                    isCustomDaysSelected = isCustomDaysSelected,
+                                    onSelectCustomDays = {
+                                        isCustomDaysSelected = true
+                                        activeKeypadTarget = KeypadTarget.DEFERRED_DAYS
+                                    },
                                     customDaysText = customDaysText,
-                                    onCustomDaysChange = { customDaysText = it }
+                                    onCustomDaysChange = { text ->
+                                        customDaysText = text
+                                        text.toIntOrNull()?.let { deferredDays = it }
+                                    },
+                                    onCustomDaysFocus = { activeKeypadTarget = KeypadTarget.DEFERRED_DAYS }
+                                )
+                            }
+
+                            // Column 2: Keypad + Financial Summary
+                            Column(
+                                modifier = Modifier.weight(0.9f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                SidebarNumericKeypad(
+                                    activeTarget = activeKeypadTarget,
+                                    onTargetChange = { activeKeypadTarget = it },
+                                    weightText = weightText,
+                                    priceText = priceText,
+                                    customDaysText = customDaysText,
+                                    onKeyPress = { key ->
+                                        handleKeypadInput(
+                                            key = key,
+                                            activeTarget = activeKeypadTarget,
+                                            weightText = weightText,
+                                            onWeightChange = { weightText = it },
+                                            priceText = priceText,
+                                            onPriceChange = { priceText = it },
+                                            customDaysText = customDaysText,
+                                            onCustomDaysChange = { text ->
+                                                customDaysText = text
+                                                text.toIntOrNull()?.let { deferredDays = it }
+                                            },
+                                            onNextTarget = { target -> activeKeypadTarget = target },
+                                            onAddCropTrigger = {
+                                                if (cropName.isNotBlank()) {
+                                                    saleItems.add(
+                                                        SaleCropItem(
+                                                            cropName = cropName,
+                                                            weightOrCount = weightText.toDoubleOrNull() ?: 1.0,
+                                                            unitPriceIQD = priceText.toLongOrNull() ?: 1000L
+                                                        )
+                                                    )
+                                                    weightText = ""
+                                                    priceText = ""
+                                                    activeKeypadTarget = KeypadTarget.WEIGHT
+                                                }
+                                            }
+                                        )
+                                    }
                                 )
 
                                 FinancialSummaryCard(
                                     goodsTotal = goodsTotal,
                                     commission7 = commission7,
-                                    totalCarryingFee = totalCarryingFee,
+                                    porterageFee = porterageFee,
                                     grandTotal = grandTotal,
                                     formatIQD = formatIQD,
                                     onSubmit = {
-                                        if (customerName.isNotBlank() && saleCropRows.isNotEmpty()) {
-                                            val finalItems = saleCropRows.map { row ->
-                                                SaleCropItem(
-                                                    cropName = row.cropName,
-                                                    weightOrCount = row.weightOrCount,
-                                                    unitPriceIQD = row.unitPrice
-                                                )
-                                            }
+                                        if (customerName.isNotEmpty() && saleItems.isNotEmpty()) {
                                             onSubmit(
                                                 customerName,
-                                                customerPhone,
-                                                customerAddress,
+                                                phone,
+                                                address,
                                                 paymentType,
-                                                if (paymentType == "آجل") computedDeferredDays else 0,
-                                                finalItems
+                                                deferredDays,
+                                                saleItems.toList()
                                             )
                                         }
                                     }
                                 )
                             }
+                        }
+                    } else {
+                        // Narrow screen vertical stack
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            CustomerDataSection(
+                                customerName = customerName,
+                                onCustomerNameChange = {
+                                    customerName = it
+                                    showCustomerDropdown = true
+                                },
+                                phone = phone,
+                                onPhoneChange = { phone = it },
+                                address = address,
+                                onAddressChange = { address = it },
+                                showDropdown = showCustomerDropdown,
+                                onDismissDropdown = { showCustomerDropdown = false },
+                                onSelectSuggestion = { sugg ->
+                                    customerName = sugg.name
+                                    phone = sugg.phone
+                                    address = sugg.address
+                                    showCustomerDropdown = false
+                                }
+                            )
+
+                            CropEntrySection(
+                                cropName = cropName,
+                                onCropNameChange = {
+                                    cropName = it
+                                    showCropDropdown = true
+                                },
+                                showCropDropdown = showCropDropdown,
+                                onDismissCropDropdown = { showCropDropdown = false },
+                                weightText = weightText,
+                                onWeightFocus = { activeKeypadTarget = KeypadTarget.WEIGHT },
+                                onWeightChange = { weightText = it },
+                                priceText = priceText,
+                                onPriceFocus = { activeKeypadTarget = KeypadTarget.PRICE },
+                                onPriceChange = { priceText = it },
+                                activeTarget = activeKeypadTarget,
+                                onAddCrop = {
+                                    if (cropName.isNotBlank()) {
+                                        saleItems.add(
+                                            SaleCropItem(
+                                                cropName = cropName,
+                                                weightOrCount = weightText.toDoubleOrNull() ?: 1.0,
+                                                unitPriceIQD = priceText.toLongOrNull() ?: 1000L
+                                            )
+                                        )
+                                        weightText = ""
+                                        priceText = ""
+                                    }
+                                },
+                                saleItems = saleItems,
+                                onRemoveCrop = { idx -> saleItems.removeAt(idx) },
+                                formatIQD = formatIQD
+                            )
+
+                            PaymentAndTenureSection(
+                                paymentType = paymentType,
+                                onPaymentTypeChange = { paymentType = it },
+                                deferredDays = deferredDays,
+                                onDeferredDaysChange = { days ->
+                                    deferredDays = days
+                                    isCustomDaysSelected = false
+                                },
+                                isCustomDaysSelected = isCustomDaysSelected,
+                                onSelectCustomDays = {
+                                    isCustomDaysSelected = true
+                                    activeKeypadTarget = KeypadTarget.DEFERRED_DAYS
+                                },
+                                customDaysText = customDaysText,
+                                onCustomDaysChange = { text ->
+                                    customDaysText = text
+                                    text.toIntOrNull()?.let { deferredDays = it }
+                                },
+                                onCustomDaysFocus = { activeKeypadTarget = KeypadTarget.DEFERRED_DAYS }
+                            )
+
+                            SidebarNumericKeypad(
+                                activeTarget = activeKeypadTarget,
+                                onTargetChange = { activeKeypadTarget = it },
+                                weightText = weightText,
+                                priceText = priceText,
+                                customDaysText = customDaysText,
+                                onKeyPress = { key ->
+                                    handleKeypadInput(
+                                        key = key,
+                                        activeTarget = activeKeypadTarget,
+                                        weightText = weightText,
+                                        onWeightChange = { weightText = it },
+                                        priceText = priceText,
+                                        onPriceChange = { priceText = it },
+                                        customDaysText = customDaysText,
+                                        onCustomDaysChange = { text ->
+                                            customDaysText = text
+                                            text.toIntOrNull()?.let { deferredDays = it }
+                                        },
+                                        onNextTarget = { target -> activeKeypadTarget = target },
+                                        onAddCropTrigger = {
+                                            if (cropName.isNotBlank()) {
+                                                saleItems.add(
+                                                    SaleCropItem(
+                                                        cropName = cropName,
+                                                        weightOrCount = weightText.toDoubleOrNull() ?: 1.0,
+                                                        unitPriceIQD = priceText.toLongOrNull() ?: 1000L
+                                                    )
+                                                )
+                                                weightText = ""
+                                                priceText = ""
+                                                activeKeypadTarget = KeypadTarget.WEIGHT
+                                            }
+                                        }
+                                    )
+                                }
+                            )
+
+                            FinancialSummaryCard(
+                                goodsTotal = goodsTotal,
+                                commission7 = commission7,
+                                porterageFee = porterageFee,
+                                grandTotal = grandTotal,
+                                formatIQD = formatIQD,
+                                onSubmit = {
+                                    if (customerName.isNotEmpty() && saleItems.isNotEmpty()) {
+                                        onSubmit(
+                                            customerName,
+                                            phone,
+                                            address,
+                                            paymentType,
+                                            deferredDays,
+                                            saleItems.toList()
+                                        )
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -345,22 +499,26 @@ fun NewSalesInvoiceSheet(
     }
 }
 
-// ---------------------------------------------------------------------------
-// 1. Customer Header Grid Section
-// ---------------------------------------------------------------------------
+// 1. Customer Data Section with Autocomplete
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CustomerHeaderGridSection(
+private fun CustomerDataSection(
     customerName: String,
     onCustomerNameChange: (String) -> Unit,
-    customerPhone: String,
+    phone: String,
     onPhoneChange: (String) -> Unit,
-    customerAddress: String,
+    address: String,
     onAddressChange: (String) -> Unit,
-    customerSuggestions: List<String>,
-    customerDropdownExpanded: Boolean,
-    onCustomerDropdownExpandedChange: (Boolean) -> Unit
+    showDropdown: Boolean,
+    onDismissDropdown: () -> Unit,
+    onSelectSuggestion: (CustomerSuggestion) -> Unit
 ) {
+    val filteredSuggestions = remember(customerName) {
+        sampleCustomerSuggestions.filter {
+            it.name.contains(customerName, ignoreCase = true) || it.phone.contains(customerName)
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = CardSurfaceWhite,
@@ -369,7 +527,7 @@ private fun CustomerHeaderGridSection(
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -377,114 +535,108 @@ private fun CustomerHeaderGridSection(
             ) {
                 Icon(Icons.Rounded.Person, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(18.dp))
                 Text(
-                    text = "معلومات الزبون (صاحب المحل):",
+                    text = "بيانات الزبون (صاحب المحل / المشتري):",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = DarkForestGreen
+                    color = DarkForestGreen,
+                    fontFamily = CairoFontFamily
                 )
             }
 
-            // Customer Name Autocomplete Dropdown
-            ExposedDropdownMenuBox(
-                expanded = customerDropdownExpanded,
-                onExpandedChange = { onCustomerDropdownExpandedChange(!customerDropdownExpanded) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // Customer Name Autocomplete Box
+            Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = customerName,
-                    onValueChange = {
-                        onCustomerNameChange(it)
-                        onCustomerDropdownExpandedChange(true)
-                    },
-                    label = { Text("اسم الزبون (صاحب المحل)") },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.Person, contentDescription = null, tint = MediumForestGreen)
-                    },
+                    onValueChange = onCustomerNameChange,
+                    label = { Text("اسم الزبون (ابحث بالإكمال التلقائي...)", fontFamily = CairoFontFamily) },
                     trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded)
+                        Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Dropdown", tint = MediumForestGreen)
                     },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder
-                    ),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MediumForestGreen,
+                        unfocusedBorderColor = GlassBorder
+                    )
                 )
 
-                val filtered = customerSuggestions.filter { it.contains(customerName, ignoreCase = true) }
-                if (filtered.isNotEmpty()) {
-                    ExposedDropdownMenu(
-                        expanded = customerDropdownExpanded,
-                        onDismissRequest = { onCustomerDropdownExpandedChange(false) },
-                        modifier = Modifier.background(CardSurfaceWhite)
-                    ) {
-                        filtered.forEach { suggestion ->
-                            DropdownMenuItem(
-                                text = { Text(suggestion, fontSize = 13.sp, fontWeight = FontWeight.Medium) },
-                                onClick = {
-                                    onCustomerNameChange(suggestion)
-                                    onCustomerDropdownExpandedChange(false)
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Rounded.Storefront, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(16.dp))
+                DropdownMenu(
+                    expanded = showDropdown && filteredSuggestions.isNotEmpty(),
+                    onDismissRequest = onDismissDropdown,
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(CardSurfaceWhite)
+                ) {
+                    filteredSuggestions.forEach { sugg ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(sugg.name, fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = CairoFontFamily)
+                                    Text("${sugg.phone} • ${sugg.address}", fontSize = 11.sp, color = TextSecondaryMuted, fontFamily = CairoFontFamily)
                                 }
-                            )
-                        }
+                            },
+                            onClick = { onSelectSuggestion(sugg) },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Storefront, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(18.dp))
+                            }
+                        )
                     }
                 }
             }
 
-            // Phone & Address Optional Fields Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = customerPhone,
+                    value = phone,
                     onValueChange = onPhoneChange,
-                    label = { Text("رقم الهاتف (اختياري)") },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.Phone, contentDescription = null, tint = MediumForestGreen)
-                    },
+                    label = { Text("رقم الهاتف", fontFamily = CairoFontFamily) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder
-                    ),
+                    modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MediumForestGreen,
+                        unfocusedBorderColor = GlassBorder
+                    )
                 )
-
                 OutlinedTextField(
-                    value = customerAddress,
+                    value = address,
                     onValueChange = onAddressChange,
-                    label = { Text("العنوان (اختياري)") },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.LocationOn, contentDescription = null, tint = MediumForestGreen)
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder
-                    ),
+                    label = { Text("العنوان / الفرع", fontFamily = CairoFontFamily) },
+                    modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MediumForestGreen,
+                        unfocusedBorderColor = GlassBorder
+                    )
                 )
             }
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// 2. Dynamic Crops List Section
-// ---------------------------------------------------------------------------
+// 2. Crop Entry Section (Dynamic List & Dashed Add Button)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DynamicCropsListSection(
-    saleCropRows: MutableList<EditableSaleCropRow>,
-    availableCropSuggestions: List<String>,
+private fun CropEntrySection(
+    cropName: String,
+    onCropNameChange: (String) -> Unit,
+    showCropDropdown: Boolean,
+    onDismissCropDropdown: () -> Unit,
+    weightText: String,
+    onWeightFocus: () -> Unit,
+    onWeightChange: (String) -> Unit,
+    priceText: String,
+    onPriceFocus: () -> Unit,
+    onPriceChange: (String) -> Unit,
+    activeTarget: KeypadTarget,
+    onAddCrop: () -> Unit,
+    saleItems: List<SaleCropItem>,
+    onRemoveCrop: (Int) -> Unit,
     formatIQD: (Long) -> String
 ) {
+    val filteredCrops = remember(cropName) {
+        sampleCrops.filter { it.contains(cropName, ignoreCase = true) }
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = CardSurfaceWhite,
@@ -493,269 +645,201 @@ private fun DynamicCropsListSection(
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.Rounded.Eco, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(18.dp))
+                Text(
+                    text = "قائمة المحاصيل والأصناف المباعة:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkForestGreen,
+                    fontFamily = CairoFontFamily
+                )
+            }
+
+            // Crop Name Autocomplete
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = cropName,
+                    onValueChange = onCropNameChange,
+                    label = { Text("اختر أو اكتب اسم المحصول...", fontFamily = CairoFontFamily) },
+                    trailingIcon = {
+                        Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Dropdown", tint = MediumForestGreen)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MediumForestGreen,
+                        unfocusedBorderColor = GlassBorder
+                    )
+                )
+
+                DropdownMenu(
+                    expanded = showCropDropdown && filteredCrops.isNotEmpty(),
+                    onDismissRequest = onDismissCropDropdown,
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(CardSurfaceWhite)
+                ) {
+                    filteredCrops.forEach { crop ->
+                        DropdownMenuItem(
+                            text = { Text(crop, fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = CairoFontFamily) },
+                            onClick = {
+                                onCropNameChange(crop)
+                                onDismissCropDropdown()
+                            }
+                        )
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Weight/Count Field
+                val isWeightActive = activeTarget == KeypadTarget.WEIGHT
+                OutlinedTextField(
+                    value = weightText,
+                    onValueChange = onWeightChange,
+                    label = { Text("الوزن (كجم / صندوق)", fontFamily = CairoFontFamily) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onWeightFocus() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isWeightActive) GoldLicenseDark else MediumForestGreen,
+                        unfocusedBorderColor = if (isWeightActive) GoldLicense else GlassBorder,
+                        focusedContainerColor = if (isWeightActive) GoldLicenseLight else Color.Unspecified
+                    )
+                )
+
+                // Price Field
+                val isPriceActive = activeTarget == KeypadTarget.PRICE
+                OutlinedTextField(
+                    value = priceText,
+                    onValueChange = onPriceChange,
+                    label = { Text("سعر الوحدة (د.ع)", fontFamily = CairoFontFamily) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onPriceFocus() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isPriceActive) GoldLicenseDark else MediumForestGreen,
+                        unfocusedBorderColor = if (isPriceActive) GoldLicense else GlassBorder,
+                        focusedContainerColor = if (isPriceActive) GoldLicenseLight else Color.Unspecified
+                    )
+                )
+            }
+
+            // Dashed Border Button as requested
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .dashedBorder(
+                        strokeWidth = 1.8.dp,
+                        color = DarkForestGreen,
+                        cornerRadius = 12.dp,
+                        dashLength = 8.dp,
+                        gapLength = 6.dp
+                    )
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF0FDF4))
+                    .clickable { onAddCrop() },
+                contentAlignment = Alignment.Center
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Rounded.Grass, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(18.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.AddCircle,
+                        contentDescription = null,
+                        tint = DarkForestGreen,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Text(
-                        text = "أسطر الأصناف والمحاصيل المباعة:",
+                        text = "إضافة صنف آخر في الفاتورة",
+                        color = DarkForestGreen,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkForestGreen
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MintGreen.copy(alpha = 0.3f)
-                ) {
-                    Text(
-                        text = "${saleCropRows.size} أصناف",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkForestGreen,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        fontFamily = CairoFontFamily
                     )
                 }
             }
 
-            // Editable Rows List
-            saleCropRows.forEachIndexed { index, row ->
-                EditableCropRowItem(
-                    index = index + 1,
-                    row = row,
-                    canDelete = saleCropRows.size > 1,
-                    availableCropSuggestions = availableCropSuggestions,
-                    onDelete = { saleCropRows.removeAt(index) },
-                    formatIQD = formatIQD
-                )
-            }
-
-            // Dashed Button to Add Another Crop Line
-            DashedButton(
-                onClick = {
-                    saleCropRows.add(
-                        EditableSaleCropRow(
-                            cropName = availableCropSuggestions.getOrElse(saleCropRows.size % availableCropSuggestions.size) { "صنف جديد" },
-                            boxCountText = "10",
-                            weightText = "200",
-                            priceText = "1000"
-                        )
-                    )
-                },
-                color = DarkForestGreen,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = null, tint = DarkForestGreen)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "+ إضافة صنف آخر في الفاتورة",
-                    color = DarkForestGreen,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditableCropRowItem(
-    index: Int,
-    row: EditableSaleCropRow,
-    canDelete: Boolean,
-    availableCropSuggestions: List<String>,
-    onDelete: () -> Unit,
-    formatIQD: (Long) -> String
-) {
-    var cropDropdownExpanded by remember { mutableStateOf(false) }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color(0xFFF8FAF9),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, GlassBorder)
-    ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Header Row: Item Number & Dropdown & Delete Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "#$index",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MediumForestGreen
-                    )
-
-                    // Crop Dropdown Menu Box
-                    ExposedDropdownMenuBox(
-                        expanded = cropDropdownExpanded,
-                        onExpandedChange = { cropDropdownExpanded = !cropDropdownExpanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = row.cropName,
-                            onValueChange = { row.cropName = it },
-                            label = { Text("اسم المحصول / الصنف") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = cropDropdownExpanded)
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = DarkForestGreen,
-                                unfocusedBorderColor = GlassBorder,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            ),
+            // Added Items List Pills
+            if (saleItems.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    saleItems.forEachIndexed { idx, item ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = BackgroundSoft,
                             shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = cropDropdownExpanded,
-                            onDismissRequest = { cropDropdownExpanded = false },
-                            modifier = Modifier.background(CardSurfaceWhite)
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
-                            availableCropSuggestions.forEach { suggestion ->
-                                DropdownMenuItem(
-                                    text = { Text(suggestion, fontSize = 12.sp, fontWeight = FontWeight.Medium) },
-                                    onClick = {
-                                        row.cropName = suggestion
-                                        cropDropdownExpanded = false
-                                    }
-                                )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.cropName,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimaryDark,
+                                        fontFamily = CairoFontFamily
+                                    )
+                                    Text(
+                                        text = "${item.weightOrCount.toInt()} كجم/صندوق × ${formatIQD(item.unitPriceIQD)} د.ع = ${formatIQD(item.totalAmountIQD)} د.ع",
+                                        fontSize = 11.5.sp,
+                                        color = TextSecondaryMuted,
+                                        fontFamily = CairoFontFamily
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { onRemoveCrop(idx) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Delete,
+                                        contentDescription = "Remove",
+                                        tint = RedWarningDark,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
-
-                if (canDelete) {
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .padding(start = 6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Delete,
-                            contentDescription = "حذف الصنف",
-                            tint = RedWarning,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            // Input Fields Row: Boxes, Weight, Unit Price
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = row.boxCountText,
-                    onValueChange = { row.boxCountText = it },
-                    label = { Text("الصناديق/الأكياس") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f)
-                )
-
-                OutlinedTextField(
-                    value = row.weightText,
-                    onValueChange = { row.weightText = it },
-                    label = { Text("الوزن (كغم)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f)
-                )
-
-                OutlinedTextField(
-                    value = row.priceText,
-                    onValueChange = { row.priceText = it },
-                    label = { Text("السعر (د.ع)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkForestGreen,
-                        unfocusedBorderColor = GlassBorder,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1.2f)
-                )
-            }
-
-            // Subtotal Calculation Banner for Item
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DarkForestGreen.copy(alpha = 0.06f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "المجموع: ${formatIQD(row.subtotal)}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimaryDark
-                )
-                Text(
-                    text = "عمولة 7%: ${formatIQD(row.commission7)} | حمالية: ${formatIQD(row.carryingFee)}",
-                    fontSize = 10.sp,
-                    color = TextSecondaryMuted
-                )
             }
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// 3. General Options & Payment Method Section
-// ---------------------------------------------------------------------------
+// 3. Payment Options & Tenure Section
 @Composable
-private fun GeneralOptionsAndPaymentSection(
-    invoiceNotes: String,
-    onNotesChange: (String) -> Unit,
+private fun PaymentAndTenureSection(
     paymentType: String,
     onPaymentTypeChange: (String) -> Unit,
-    selectedMaturityOption: String,
-    onMaturityOptionChange: (String) -> Unit,
+    deferredDays: Int,
+    onDeferredDaysChange: (Int) -> Unit,
+    isCustomDaysSelected: Boolean,
+    onSelectCustomDays: () -> Unit,
     customDaysText: String,
-    onCustomDaysChange: (String) -> Unit
+    onCustomDaysChange: (String) -> Unit,
+    onCustomDaysFocus: () -> Unit
 ) {
+    val isDeferred = paymentType == "آجل"
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = CardSurfaceWhite,
@@ -764,146 +848,153 @@ private fun GeneralOptionsAndPaymentSection(
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = "الخيارات العامة وطريقة الدفع:",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = DarkForestGreen
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.Rounded.Payments, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(18.dp))
+                Text(
+                    text = "خيارات الدفع وطريقة الاستحقاق:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkForestGreen,
+                    fontFamily = CairoFontFamily
+                )
+            }
 
-            // Invoice Notes Field
-            OutlinedTextField(
-                value = invoiceNotes,
-                onValueChange = onNotesChange,
-                label = { Text("ملاحظات الفاتورة (اختياري)") },
-                leadingIcon = {
-                    Icon(Icons.Rounded.NoteAlt, contentDescription = null, tint = MediumForestGreen)
-                },
-                placeholder = { Text("مثال: تسليم عند المحل / دفعة جزيئة مع البضاعة", fontSize = 11.sp) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = DarkForestGreen,
-                    unfocusedBorderColor = GlassBorder
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Payment Type Toggle Switch Group
-            Text(
-                text = "طريقة الدفع الفوري/الآجل:",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimaryDark
-            )
-
+            // Single Toggle Row (💵 نقد / 📋 دين بالأجل)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BackgroundSoft, RoundedCornerShape(12.dp))
-                    .padding(4.dp),
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF1F5F9))
+                    .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Cash Button
-                Button(
-                    onClick = { onPaymentTypeChange("كاش") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (paymentType == "كاش") EmeraldSuccess else Color.Transparent,
-                        contentColor = if (paymentType == "كاش") Color.White else TextPrimaryDark
-                    ),
-                    elevation = if (paymentType == "كاش") ButtonDefaults.buttonElevation(2.dp) else ButtonDefaults.buttonElevation(0.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (!isDeferred) EmeraldSuccess else Color.Transparent)
+                        .clickable { onPaymentTypeChange("كاش") },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("💵 نقد (كاش)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "💵 نقد / كاش",
+                        color = if (!isDeferred) Color.White else TextPrimaryDark,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily
+                    )
                 }
 
-                // Deferred Debt Button (Default active)
-                Button(
-                    onClick = { onPaymentTypeChange("آجل") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (paymentType == "آجل") RedWarning else Color.Transparent,
-                        contentColor = if (paymentType == "آجل") Color.White else TextPrimaryDark
-                    ),
-                    elevation = if (paymentType == "آجل") ButtonDefaults.buttonElevation(2.dp) else ButtonDefaults.buttonElevation(0.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isDeferred) RedWarningDark else Color.Transparent)
+                        .clickable { onPaymentTypeChange("آجل") },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("📋 دين بالأجل", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "📋 دين بالأجل",
+                        color = if (isDeferred) Color.White else TextPrimaryDark,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily
+                    )
                 }
             }
 
-            // Segmented Control for Debt Maturity Options
-            AnimatedVisibility(
-                visible = paymentType == "آجل",
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(RedWarning.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                        .padding(10.dp)
-                ) {
+            // Tenure Options if Deferred
+            AnimatedVisibility(visible = isDeferred) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "خيارات استحقاق الدين الآجل:",
-                        fontSize = 11.sp,
+                        text = "اختر مهلة الاستحقاق للدين الآجل:",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = RedWarning
+                        color = RedWarningDark,
+                        fontFamily = CairoFontFamily
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val options = listOf("5 أيام", "10 أيام", "15 يوم", "مخصص")
-                        options.forEach { option ->
+                        listOf(5, 10, 15).forEach { days ->
+                            val isSelected = !isCustomDaysSelected && deferredDays == days
                             FilterChip(
-                                selected = selectedMaturityOption == option,
-                                onClick = { onMaturityOptionChange(option) },
+                                selected = isSelected,
+                                onClick = { onDeferredDaysChange(days) },
                                 label = {
                                     Text(
-                                        text = option,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selectedMaturityOption == option) FontWeight.Bold else FontWeight.Normal
+                                        text = "$days أيام",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White else TextPrimaryDark,
+                                        fontFamily = CairoFontFamily
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = RedWarning,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = Color.White,
-                                    labelColor = TextPrimaryDark
+                                    selectedContainerColor = RedWarningDark,
+                                    containerColor = CardSurfaceWhite
                                 ),
                                 border = FilterChipDefaults.filterChipBorder(
-                                    borderColor = if (selectedMaturityOption == option) RedWarning else GlassBorder,
                                     enabled = true,
-                                    selected = selectedMaturityOption == option
+                                    selected = isSelected,
+                                    borderColor = GlassBorder
                                 ),
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f)
                             )
                         }
+
+                        // Custom Option Button
+                        FilterChip(
+                            selected = isCustomDaysSelected,
+                            onClick = onSelectCustomDays,
+                            label = {
+                                Text(
+                                    text = "مخصص",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (isCustomDaysSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isCustomDaysSelected) Color.White else TextPrimaryDark,
+                                    fontFamily = CairoFontFamily
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = RedWarningDark,
+                                containerColor = CardSurfaceWhite
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isCustomDaysSelected,
+                                borderColor = GlassBorder
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        )
                     }
 
-                    // Custom Days Input Field when "مخصص" is selected
-                    if (selectedMaturityOption == "مخصص") {
+                    if (isCustomDaysSelected) {
                         OutlinedTextField(
                             value = customDaysText,
                             onValueChange = onCustomDaysChange,
-                            label = { Text("عدد الأيام المخصصة") },
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Schedule, contentDescription = null, tint = RedWarning)
-                            },
+                            label = { Text("أدخل مهلة الاستحقاق بالأيام (مثلاً: 20)", fontFamily = CairoFontFamily) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onCustomDaysFocus() },
+                            shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = RedWarning,
-                                unfocusedBorderColor = GlassBorder,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
+                                focusedBorderColor = RedWarningDark,
+                                unfocusedBorderColor = GlassBorder
+                            )
                         )
                     }
                 }
@@ -912,14 +1003,165 @@ private fun GeneralOptionsAndPaymentSection(
     }
 }
 
-// ---------------------------------------------------------------------------
-// 4. Financial Summary Card & Primary Button
-// ---------------------------------------------------------------------------
+// 4. Sidebar Interactive Numeric Keypad with Digital Readout Screen
+@Composable
+private fun SidebarNumericKeypad(
+    activeTarget: KeypadTarget,
+    onTargetChange: (KeypadTarget) -> Unit,
+    weightText: String,
+    priceText: String,
+    customDaysText: String,
+    onKeyPress: (String) -> Unit
+) {
+    val currentReadout = when (activeTarget) {
+        KeypadTarget.WEIGHT -> if (weightText.isBlank()) "0 كجم" else "$weightText كجم"
+        KeypadTarget.PRICE -> if (priceText.isBlank()) "0 د.ع" else "$priceText د.ع"
+        KeypadTarget.DEFERRED_DAYS -> if (customDaysText.isBlank()) "0 يوم" else "$customDaysText يوم"
+    }
+
+    val activeLabel = when (activeTarget) {
+        KeypadTarget.WEIGHT -> "الوزن / العدد"
+        KeypadTarget.PRICE -> "سعر الوحدة"
+        KeypadTarget.DEFERRED_DAYS -> "مهلة الدين"
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp)),
+        color = CardSurfaceWhite,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Target Selector Tabs
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFE2E8F0))
+                    .padding(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                listOf(
+                    KeypadTarget.WEIGHT to "الوزن",
+                    KeypadTarget.PRICE to "السعر",
+                    KeypadTarget.DEFERRED_DAYS to "المهلة"
+                ).forEach { (target, label) ->
+                    val isSelected = activeTarget == target
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isSelected) DarkForestGreen else Color.Transparent)
+                            .clickable { onTargetChange(target) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (isSelected) Color.White else TextPrimaryDark,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = CairoFontFamily
+                        )
+                    }
+                }
+            }
+
+            // Digital Display Readout Screen
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                color = DarkForestGreen,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "المدخل [$activeLabel]:",
+                        color = MintGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily
+                    )
+                    Text(
+                        text = currentReadout,
+                        color = GoldLicense,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = CairoFontFamily
+                    )
+                }
+            }
+
+            // Numeric Grid (4x4)
+            val keys = listOf(
+                listOf("1", "2", "3"),
+                listOf("4", "5", "6"),
+                listOf("7", "8", "9"),
+                listOf("C", "0", "⌫"),
+                listOf("00", "OK")
+            )
+
+            keys.forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    row.forEach { key ->
+                        val isSpecial = key in listOf("C", "⌫", "OK")
+                        val btnBg = when (key) {
+                            "OK" -> DarkForestGreen
+                            "C", "⌫" -> Color(0xFFFEE2E2)
+                            else -> Color(0xFFF1F5F9)
+                        }
+                        val btnFg = when (key) {
+                            "OK" -> GoldLicense
+                            "C", "⌫" -> RedWarningDark
+                            else -> TextPrimaryDark
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(if (key == "OK") 2f else 1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(btnBg)
+                                .clickable { onKeyPress(key) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = key,
+                                color = btnFg,
+                                fontSize = if (isSpecial) 13.sp else 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = CairoFontFamily
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 5. Financial Summary Card & Primary Action
 @Composable
 private fun FinancialSummaryCard(
     goodsTotal: Long,
     commission7: Long,
-    totalCarryingFee: Long,
+    porterageFee: Long,
     grandTotal: Long,
     formatIQD: (Long) -> String,
     onSubmit: () -> Unit
@@ -927,193 +1169,159 @@ private fun FinancialSummaryCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        color = Color(0xFFF4F8F5), // Light background with soft green accent
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.5.dp, Color(0xFFC8E6C9))
+            .shadow(4.dp, RoundedCornerShape(18.dp)),
+        color = DarkForestGreen,
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = DarkForestGreen
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Calculate,
-                        contentDescription = null,
-                        tint = GoldLicense,
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(20.dp)
-                    )
-                }
-                Text(
-                    text = "ملخص الفاتورة والحسابات",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = DarkForestGreen
-                )
-            }
-
-            HorizontalDivider(color = Color(0xFFD0E4D7))
-
-            // Subtotal Goods
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "مجموع أسعار البضاعة (Subtotal):",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
+                Icon(
+                    imageVector = Icons.Rounded.Calculate,
+                    contentDescription = null,
+                    tint = GoldLicense,
+                    modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = formatIQD(goodsTotal),
-                    fontSize = 13.sp,
+                    text = "ملخص الحسابات والعمولات:",
+                    color = MintGreen,
+                    fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryDark
+                    fontFamily = CairoFontFamily
                 )
             }
 
-            // Office Commission 7%
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "عمولة المكتب (7%):",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                )
-                Text(
-                    text = formatIQD(commission7),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkForestGreen
-                )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("مجموع أسعار البضاعة المباعة:", color = Color.White, fontSize = 12.sp, fontFamily = CairoFontFamily)
+                Text(formatIQD(goodsTotal), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
             }
 
-            // Carrying Fees
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "الحمالية الكلية (Carrying Fees):",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                )
-                Text(
-                    text = formatIQD(totalCarryingFee),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimaryDark
-                )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("عمولة المكتب (7%):", color = Color.White, fontSize = 12.sp, fontFamily = CairoFontFamily)
+                Text(formatIQD(commission7), color = GoldLicense, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
             }
 
-            HorizontalDivider(color = Color(0xFFD0E4D7), thickness = 1.5.dp)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("أجور الحمالية الكلية:", color = Color.White, fontSize = 12.sp, fontFamily = CairoFontFamily)
+                Text(formatIQD(porterageFee), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+            }
 
-            // Grand Total
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DarkForestGreen.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "المبلغ الإجمالي الكلي:",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = DarkForestGreen
-                )
-                Text(
-                    text = formatIQD(grandTotal),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = DarkForestGreen
-                )
+            HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("المبلغ الإجمالي المطلـوب:", color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.ExtraBold, fontFamily = CairoFontFamily)
+                Text(formatIQD(grandTotal), color = GoldLicense, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, fontFamily = CairoFontFamily)
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Emerald Green Full Width Primary Button
             Button(
                 onClick = onSubmit,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DarkForestGreen,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(16.dp),
-                elevation = ButtonDefaults.buttonElevation(4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = GoldLicense),
+                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(48.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.CheckCircle,
-                    contentDescription = null,
-                    tint = GoldLicense,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "إصدار الفاتورة وحساب الأرباح",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = TextPrimaryDark,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "إصدار الفاتورة وحساب الأرباح",
+                        color = TextPrimaryDark,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = CairoFontFamily
+                    )
+                }
             }
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helper Dashed Border Button Component
-// ---------------------------------------------------------------------------
-@Composable
-private fun DashedButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    color: Color = DarkForestGreen,
-    content: @Composable RowScope.() -> Unit
+// Helper Keypad Handler Logic
+private fun handleKeypadInput(
+    key: String,
+    activeTarget: KeypadTarget,
+    weightText: String,
+    onWeightChange: (String) -> Unit,
+    priceText: String,
+    onPriceChange: (String) -> Unit,
+    customDaysText: String,
+    onCustomDaysChange: (String) -> Unit,
+    onNextTarget: (KeypadTarget) -> Unit,
+    onAddCropTrigger: () -> Unit
 ) {
-    val stroke = Stroke(
-        width = 3f,
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-    )
-    Surface(
-        onClick = onClick,
-        modifier = modifier.drawWithContent {
-            drawContent()
-            drawRoundRect(
-                color = color,
-                style = stroke,
-                cornerRadius = CornerRadius(14.dp.toPx())
-            )
-        },
-        shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF4F8F5)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            content()
+    when (key) {
+        "C" -> {
+            when (activeTarget) {
+                KeypadTarget.WEIGHT -> onWeightChange("")
+                KeypadTarget.PRICE -> onPriceChange("")
+                KeypadTarget.DEFERRED_DAYS -> onCustomDaysChange("")
+            }
+        }
+        "⌫" -> {
+            when (activeTarget) {
+                KeypadTarget.WEIGHT -> if (weightText.isNotEmpty()) onWeightChange(weightText.dropLast(1))
+                KeypadTarget.PRICE -> if (priceText.isNotEmpty()) onPriceChange(priceText.dropLast(1))
+                KeypadTarget.DEFERRED_DAYS -> if (customDaysText.isNotEmpty()) onCustomDaysChange(customDaysText.dropLast(1))
+            }
+        }
+        "OK" -> {
+            if (activeTarget == KeypadTarget.WEIGHT) {
+                onNextTarget(KeypadTarget.PRICE)
+            } else if (activeTarget == KeypadTarget.PRICE) {
+                onAddCropTrigger()
+            }
+        }
+        else -> {
+            when (activeTarget) {
+                KeypadTarget.WEIGHT -> onWeightChange(if (weightText == "0") key else weightText + key)
+                KeypadTarget.PRICE -> onPriceChange(if (priceText == "0") key else priceText + key)
+                KeypadTarget.DEFERRED_DAYS -> onCustomDaysChange(if (customDaysText == "0") key else customDaysText + key)
+            }
         }
     }
+}
+
+// Custom Dashed Border Extension
+private fun Modifier.dashedBorder(
+    strokeWidth: Dp = 1.5.dp,
+    color: Color = DarkForestGreen,
+    cornerRadius: Dp = 12.dp,
+    dashLength: Dp = 8.dp,
+    gapLength: Dp = 6.dp
+) = drawWithContent {
+    drawContent()
+    val strokeWidthPx = strokeWidth.toPx()
+    val dashLengthPx = dashLength.toPx()
+    val gapLengthPx = gapLength.toPx()
+    val radiusPx = cornerRadius.toPx()
+
+    val pathEffect = PathEffect.dashPathEffect(
+        floatArrayOf(dashLengthPx, gapLengthPx),
+        0f
+    )
+    val stroke = Stroke(
+        width = strokeWidthPx,
+        pathEffect = pathEffect
+    )
+
+    drawRoundRect(
+        color = color,
+        style = stroke,
+        cornerRadius = CornerRadius(radiusPx, radiusPx)
+    )
 }

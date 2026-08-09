@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -215,53 +216,113 @@ fun SalesScreen(
             }
         }
 
-        // 2. Search & Filter Bar
+        // 2. Ultra-Compact Search & Filter Bar
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(2.dp, RoundedCornerShape(16.dp)),
-                    placeholder = { Text("ابحث بالزبون، المحصول، أو رمز الفاتورة...", fontSize = 13.sp, fontFamily = CairoFontFamily) },
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = MediumForestGreen,
-                        unfocusedBorderColor = GlassBorder
-                    )
-                )
-
-                val filterChips = listOf("الجميع", "آجل غير مدفوع ⏳", "كاش / مدفوع ✅")
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(filterChips) { chip ->
-                        val isSelected = activeFilter == chip
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onFilterChange(chip) },
-                            label = {
-                                Text(
-                                    text = chip,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color.White else TextPrimaryDark,
-                                    fontFamily = CairoFontFamily
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = DarkForestGreen,
-                                containerColor = CardSurfaceWhite
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                if (maxWidth > 600.dp) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp)
+                                .shadow(1.dp, RoundedCornerShape(12.dp)),
+                            placeholder = { Text("ابحث بالزبون، المحصول، أو رمز الفاتورة...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = MediumForestGreen,
+                                unfocusedBorderColor = GlassBorder
                             ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = GlassBorder
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
                         )
+
+                        val filterChips = listOf("الجميع", "آجل غير مدفوع ⏳", "كاش / مدفوع ✅")
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            filterChips.forEach { chip ->
+                                val isSelected = activeFilter == chip
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onFilterChange(chip) },
+                                    label = {
+                                        Text(
+                                            text = chip,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) Color.White else TextPrimaryDark,
+                                            fontFamily = CairoFontFamily
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = DarkForestGreen,
+                                        containerColor = CardSurfaceWhite
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.height(36.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .shadow(1.dp, RoundedCornerShape(12.dp)),
+                            placeholder = { Text("ابحث بالزبون، المحصول، أو رمز الفاتورة...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = MediumForestGreen,
+                                unfocusedBorderColor = GlassBorder
+                            ),
+                            textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
+                        )
+
+                        val filterChips = listOf("الجميع", "آجل غير مدفوع ⏳", "كاش / مدفوع ✅")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(filterChips) { chip ->
+                                val isSelected = activeFilter == chip
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onFilterChange(chip) },
+                                    label = {
+                                        Text(
+                                            text = chip,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) Color.White else TextPrimaryDark,
+                                            fontFamily = CairoFontFamily
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = DarkForestGreen,
+                                        containerColor = CardSurfaceWhite
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = GlassBorder
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.height(34.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -313,72 +374,77 @@ fun SalesInvoiceCard(
             )
 
             // Card Inner Content Container
+            val isTablet = LocalConfiguration.current.screenWidthDp > 600
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
+                    .then(
+                        if (isTablet) Modifier
+                        else Modifier.horizontalScroll(rememberScrollState())
+                    )
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = if (isTablet) Arrangement.SpaceBetween else Arrangement.spacedBy(10.dp)
             ) {
-                // 1. Far Right ID Badge & Date
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.widthIn(min = 75.dp)
-                ) {
-                    Surface(
-                        color = DarkForestGreen,
-                        shape = RoundedCornerShape(6.dp)
+                    // 1. Far Right ID Badge & Date
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = if (isTablet) Modifier.width(85.dp) else Modifier.widthIn(min = 75.dp)
                     ) {
+                        Surface(
+                            color = DarkForestGreen,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "ID: ${sale.code}",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = CairoFontFamily,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                        val dateOnly = sale.date.split(" ").firstOrNull() ?: sale.date
                         Text(
-                            text = "ID: ${sale.code}",
-                            color = Color.White,
+                            text = dateOnly,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = CairoFontFamily,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            color = TextSecondaryMuted,
+                            fontFamily = CairoFontFamily
                         )
                     }
-                    val dateOnly = sale.date.split(" ").firstOrNull() ?: sale.date
-                    Text(
-                        text = dateOnly,
-                        fontSize = 11.sp,
-                        color = TextSecondaryMuted,
-                        fontFamily = CairoFontFamily
-                    )
-                }
 
-                // 2. Customer Name & Location
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.widthIn(min = 130.dp, max = 170.dp)
-                ) {
-                    Text(
-                        text = sale.customerName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark,
-                        fontFamily = CairoFontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    val locationStr = if (sale.customerAddress.isNotBlank()) sale.customerAddress else "بغداد - زيونة"
-                    Text(
-                        text = locationStr,
-                        fontSize = 11.5.sp,
-                        color = TextSecondaryMuted,
-                        fontFamily = CairoFontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    // 2. Customer Name & Location
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = if (isTablet) Modifier.weight(1.2f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 130.dp, max = 170.dp)
+                    ) {
+                        Text(
+                            text = sale.customerName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryDark,
+                            fontFamily = CairoFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        val locationStr = if (sale.customerAddress.isNotBlank()) sale.customerAddress else "بغداد - زيونة"
+                        Text(
+                            text = locationStr,
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryMuted,
+                            fontFamily = CairoFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
-                // 3. Crops Stack (Pills Container)
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.widthIn(min = 210.dp, max = 260.dp)
-                ) {
+                    // 3. Crops Stack (Pills Container)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = if (isTablet) Modifier.weight(2f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 210.dp, max = 260.dp)
+                    ) {
                     sale.items.forEach { item ->
                         Surface(
                             color = Color(0xFFF4F8F5),
@@ -472,7 +538,7 @@ fun SalesInvoiceCard(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.widthIn(min = 100.dp)
+                    modifier = if (isTablet) Modifier.weight(1.3f).padding(horizontal = 4.dp) else Modifier.widthIn(min = 100.dp)
                 ) {
                     Text(
                         text = "المبلغ الإجمالي",

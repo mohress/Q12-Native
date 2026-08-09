@@ -142,6 +142,9 @@ class MainActivity : ComponentActivity() {
                     val reportType by viewModel.reportType.collectAsState()
                     val showPrinterSetupModal by viewModel.showPrinterSetupModal.collectAsState()
                     val printerDevice by viewModel.printerDevice.collectAsState()
+                    val autoConnectPrinter by viewModel.autoConnectPrinter.collectAsState()
+                    val autoConnectStatus by viewModel.autoConnectStatus.collectAsState()
+                    val autoConnectSecondsLeft by viewModel.autoConnectSecondsLeft.collectAsState()
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (splashVisible || isAppLocked) {
@@ -248,6 +251,12 @@ class MainActivity : ComponentActivity() {
                                             onFontScaleChange = viewModel::setFontScale,
                                             passcodeEnabled = passcodeEnabled,
                                             onTogglePasscode = viewModel::togglePasscode,
+                                            onLockApp = viewModel::lockApp,
+                                            printerDevice = printerDevice,
+                                            autoConnectPrinter = autoConnectPrinter,
+                                            onToggleAutoConnect = viewModel::toggleAutoConnectPrinter,
+                                            autoConnectStatus = autoConnectStatus,
+                                            autoConnectSecondsLeft = autoConnectSecondsLeft,
                                             pinCode = pinCode,
                                             onUpdatePinCode = viewModel::updatePinCode,
                                             immersiveMode = immersiveMode,

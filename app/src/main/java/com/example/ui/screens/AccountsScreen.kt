@@ -106,40 +106,92 @@ fun AccountsScreen(
         when (activeSubTab) {
             0 -> {
                 // Customer Debts Tab
+                // Ultra-Compact Search & Filter Bar (Debts)
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = onSearchChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(2.dp, RoundedCornerShape(16.dp)),
-                            placeholder = { Text("ابحث باسم الزبون المدين...", fontSize = 13.sp) },
-                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = MediumForestGreen,
-                                unfocusedBorderColor = GlassBorder
-                            )
-                        )
-
-                        val filterChips = listOf("الجميع", "متأخرة 🚨", "قادمة ⏳")
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(filterChips) { chip ->
-                                val isSelected = activeFilter == chip
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { onFilterChange(chip) },
-                                    label = { Text(chip, fontSize = 12.sp, color = if (isSelected) Color.White else TextPrimaryDark) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = DarkForestGreen,
-                                        containerColor = CardSurfaceWhite
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        if (maxWidth > 600.dp) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchChange,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                        .shadow(1.dp, RoundedCornerShape(12.dp)),
+                                    placeholder = { Text("ابحث باسم الزبون المدين...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White,
+                                        focusedBorderColor = MediumForestGreen,
+                                        unfocusedBorderColor = GlassBorder
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
                                 )
+
+                                val filterChips = listOf("الجميع", "متأخرة 🚨", "قادمة ⏳")
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    filterChips.forEach { chip ->
+                                        val isSelected = activeFilter == chip
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { onFilterChange(chip) },
+                                            label = { Text(chip, fontSize = 11.sp, color = if (isSelected) Color.White else TextPrimaryDark, fontFamily = CairoFontFamily) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = DarkForestGreen,
+                                                containerColor = CardSurfaceWhite
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.height(36.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchChange,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(42.dp)
+                                        .shadow(1.dp, RoundedCornerShape(12.dp)),
+                                    placeholder = { Text("ابحث باسم الزبون المدين...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White,
+                                        focusedBorderColor = MediumForestGreen,
+                                        unfocusedBorderColor = GlassBorder
+                                    ),
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
+                                )
+
+                                val filterChips = listOf("الجميع", "متأخرة 🚨", "قادمة ⏳")
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    items(filterChips) { chip ->
+                                        val isSelected = activeFilter == chip
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { onFilterChange(chip) },
+                                            label = { Text(chip, fontSize = 11.sp, color = if (isSelected) Color.White else TextPrimaryDark, fontFamily = CairoFontFamily) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = DarkForestGreen,
+                                                containerColor = CardSurfaceWhite
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.height(34.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -342,40 +394,92 @@ fun AccountsScreen(
 
             1 -> {
                 // Farmers Receivables Tab
+                // Ultra-Compact Search & Filter Bar (Farmers)
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = onSearchChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(2.dp, RoundedCornerShape(16.dp)),
-                            placeholder = { Text("ابحث باسم الفلاح...", fontSize = 13.sp) },
-                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = MediumForestGreen,
-                                unfocusedBorderColor = GlassBorder
-                            )
-                        )
-
-                        val filterChips = listOf("الجميع", "مستحقات اليوم", "مستحقات سابقة")
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(filterChips) { chip ->
-                                val isSelected = activeFilter == chip
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { onFilterChange(chip) },
-                                    label = { Text(chip, fontSize = 12.sp, color = if (isSelected) Color.White else TextPrimaryDark) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = DarkForestGreen,
-                                        containerColor = CardSurfaceWhite
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        if (maxWidth > 600.dp) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchChange,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                        .shadow(1.dp, RoundedCornerShape(12.dp)),
+                                    placeholder = { Text("ابحث باسم الفلاح...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White,
+                                        focusedBorderColor = MediumForestGreen,
+                                        unfocusedBorderColor = GlassBorder
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
                                 )
+
+                                val filterChips = listOf("الجميع", "مستحقات اليوم", "مستحقات سابقة")
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    filterChips.forEach { chip ->
+                                        val isSelected = activeFilter == chip
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { onFilterChange(chip) },
+                                            label = { Text(chip, fontSize = 11.sp, color = if (isSelected) Color.White else TextPrimaryDark, fontFamily = CairoFontFamily) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = DarkForestGreen,
+                                                containerColor = CardSurfaceWhite
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.height(36.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchChange,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(42.dp)
+                                        .shadow(1.dp, RoundedCornerShape(12.dp)),
+                                    placeholder = { Text("ابحث باسم الفلاح...", fontSize = 11.sp, fontFamily = CairoFontFamily) },
+                                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen, modifier = Modifier.size(18.dp)) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White,
+                                        focusedBorderColor = MediumForestGreen,
+                                        unfocusedBorderColor = GlassBorder
+                                    ),
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 11.sp, fontFamily = CairoFontFamily)
+                                )
+
+                                val filterChips = listOf("الجميع", "مستحقات اليوم", "مستحقات سابقة")
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    items(filterChips) { chip ->
+                                        val isSelected = activeFilter == chip
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { onFilterChange(chip) },
+                                            label = { Text(chip, fontSize = 11.sp, color = if (isSelected) Color.White else TextPrimaryDark, fontFamily = CairoFontFamily) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = DarkForestGreen,
+                                                containerColor = CardSurfaceWhite
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.height(34.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

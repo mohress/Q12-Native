@@ -1,13 +1,17 @@
 package com.example.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,61 +48,79 @@ fun BottomNavBar(
         NavItem("الإعدادات", Icons.Rounded.Settings, 4)
     )
 
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .shadow(16.dp, RoundedCornerShape(24.dp)),
-        color = CardSurfaceWhite,
-        shape = RoundedCornerShape(24.dp),
-        tonalElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Row(
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(0.42f)
+                .widthIn(min = 380.dp, max = 580.dp)
+                .shadow(16.dp, RoundedCornerShape(28.dp), spotColor = Color.Black.copy(alpha = 0.25f)),
+            color = CardSurfaceWhite,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 8.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
         ) {
-            navItems.forEach { item ->
-                val isSelected = selectedTab == item.index
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                navItems.forEach { item ->
+                    val isSelected = selectedTab == item.index
 
-                val backgroundColor by animateColorAsState(
-                    targetValue = if (isSelected) DarkForestGreen else Color.Transparent,
-                    label = "bgColor"
-                )
-                val contentColor by animateColorAsState(
-                    targetValue = if (isSelected) GoldLicense else TextSecondaryMuted,
-                    label = "textColor"
-                )
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) DarkForestGreen else Color.Transparent,
+                        label = "bgColor"
+                    )
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(backgroundColor)
-                        .clickable { onTabSelected(item.index) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    val itemScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.06f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "itemScale"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .scale(itemScale)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(backgroundColor)
+                            .clickable { onTabSelected(item.index) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.title,
-                            tint = if (isSelected) GoldLicense else TextSecondaryMuted,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        if (isSelected) {
-                            Text(
-                                text = item.title,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.title,
+                                tint = if (isSelected) GoldLicense else TextSecondaryMuted,
+                                modifier = Modifier.size(20.dp)
                             )
+                            AnimatedVisibility(
+                                visible = isSelected,
+                                enter = expandHorizontally(expandFrom = Alignment.Start),
+                                exit = shrinkHorizontally(shrinkTowards = Alignment.Start)
+                            ) {
+                                Text(
+                                    text = item.title,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CairoFontFamily
+                                )
+                            }
                         }
                     }
                 }
@@ -105,3 +128,4 @@ fun BottomNavBar(
         }
     }
 }
+
