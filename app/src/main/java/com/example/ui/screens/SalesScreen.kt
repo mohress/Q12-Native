@@ -358,15 +358,13 @@ fun SalesInvoiceCard(
         border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Far Right Thick Green Stripe Accent (matches image perfectly)
             Box(
                 modifier = Modifier
                     .width(6.dp)
-                    .fillMaxHeight()
+                    .height(80.dp)
                     .background(
                         DarkForestGreen,
                         shape = RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp)
@@ -477,6 +475,20 @@ fun SalesInvoiceCard(
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = DarkForestGreen,
+                                        fontFamily = CairoFontFamily,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+
+                                Surface(
+                                    color = Color(0xFFFEF3C7),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = "${item.unitPriceIQD} د.ع/كغم",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFB45309),
                                         fontFamily = CairoFontFamily,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )

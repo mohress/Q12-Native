@@ -721,7 +721,7 @@ private fun CropEntrySection(
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = onPriceChange,
-                    label = { Text("سعر الوحدة (د.ع)", fontFamily = CairoFontFamily) },
+                    label = { Text("سعر الكيلو (د.ع)", fontFamily = CairoFontFamily) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .weight(1f)
@@ -798,7 +798,7 @@ private fun CropEntrySection(
                                         fontFamily = CairoFontFamily
                                     )
                                     Text(
-                                        text = "${item.weightOrCount.toInt()} كجم/صندوق × ${formatIQD(item.unitPriceIQD)} د.ع = ${formatIQD(item.totalAmountIQD)} د.ع",
+                                        text = "${item.weightOrCount.toInt()} كغم × ${formatIQD(item.unitPriceIQD)} د.ع/كغم = ${formatIQD(item.totalAmountIQD)} د.ع",
                                         fontSize = 11.5.sp,
                                         color = TextSecondaryMuted,
                                         fontFamily = CairoFontFamily
@@ -1021,7 +1021,7 @@ private fun SidebarNumericKeypad(
 
     val activeLabel = when (activeTarget) {
         KeypadTarget.WEIGHT -> "الوزن / العدد"
-        KeypadTarget.PRICE -> "سعر الوحدة"
+        KeypadTarget.PRICE -> "سعر الكيلو"
         KeypadTarget.DEFERRED_DAYS -> "مهلة الدين"
     }
 

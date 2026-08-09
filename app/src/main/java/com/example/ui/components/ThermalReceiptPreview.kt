@@ -704,54 +704,49 @@ private fun ReceiptPaperContent(
             ) {
                 // Header Row
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
                             .weight(1.3f)
-                            .fillMaxHeight()
                             .padding(vertical = 5.dp, horizontal = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("الصنف", color = Color.Black, fontSize = (11 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
                     }
 
-                    Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+                    Box(modifier = Modifier.width(1.5.dp).height(24.dp).background(Color.Black))
 
                     Box(
                         modifier = Modifier
                             .weight(0.7f)
-                            .fillMaxHeight()
                             .padding(vertical = 5.dp, horizontal = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("العدد", color = Color.Black, fontSize = (11 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
                     }
 
-                    Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+                    Box(modifier = Modifier.width(1.5.dp).height(24.dp).background(Color.Black))
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight()
                             .padding(vertical = 5.dp, horizontal = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("الوزن", color = Color.Black, fontSize = (11 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
                     }
 
-                    Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+                    Box(modifier = Modifier.width(1.5.dp).height(24.dp).background(Color.Black))
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight()
                             .padding(vertical = 5.dp, horizontal = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("السعر", color = Color.Black, fontSize = (11 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        Text("سعر الكيلو", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
                     }
                 }
 
@@ -763,14 +758,12 @@ private fun ReceiptPaperContent(
                         HorizontalDivider(color = Color.Black, thickness = 1.dp)
                     }
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1.3f)
-                                .fillMaxHeight()
                                 .padding(vertical = 6.dp, horizontal = 4.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -783,12 +776,11 @@ private fun ReceiptPaperContent(
                             )
                         }
 
-                        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.Black))
 
                         Box(
                             modifier = Modifier
                                 .weight(0.7f)
-                                .fillMaxHeight()
                                 .padding(vertical = 6.dp, horizontal = 2.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -802,12 +794,11 @@ private fun ReceiptPaperContent(
                             )
                         }
 
-                        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.Black))
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight()
                                 .padding(vertical = 6.dp, horizontal = 2.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -820,12 +811,11 @@ private fun ReceiptPaperContent(
                             )
                         }
 
-                        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.Black))
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight()
                                 .padding(vertical = 6.dp, horizontal = 4.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -930,29 +920,51 @@ private fun ReceiptPaperContent(
                 }
             }
 
-            // 6. System Registration & QR Code Block (QR occupying 80% width)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // 6. System Registration & QR Code Block (Compact Side-by-Side Row)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "رمز التحقق والسيستم (QR)",
-                    color = Color.Black,
-                    fontSize = (10 * textScale).sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = CairoFontFamily,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Text(
+                        text = "رمز التحقق والسيستم (QR)",
+                        color = Color.Black,
+                        fontSize = (10 * textScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily
+                    )
+                    Text(
+                        text = "رمز الفاتورة: ${invoice.code}",
+                        color = Color.Black,
+                        fontSize = (9.5 * textScale).sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "المحاسب: $accountantName",
+                        color = Color.Black,
+                        fontSize = (9 * textScale).sp,
+                        fontFamily = CairoFontFamily
+                    )
+                    Text(
+                        text = "مسجلة بالنظام الإلكتروني",
+                        color = Color.Black,
+                        fontSize = (8.5 * textScale).sp,
+                        fontFamily = CairoFontFamily
+                    )
+                }
 
-                // High Contrast 80% Width QR Code Box
+                // Compact QR Code Box
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.80f)
-                        .aspectRatio(1f)
+                        .size((65 * textScale).dp)
                         .background(Color.White)
-                        .border(2.dp, Color.Black)
-                        .padding(8.dp),
+                        .border(1.5.dp, Color.Black)
+                        .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -975,9 +987,6 @@ private fun ReceiptPaperContent(
                         }
                     }
                 }
-
-                Text("Invoice Code: ${invoice.code}", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Bold)
-                Text("Cashier: $accountantName", color = Color.Black, fontSize = (9.5 * textScale).sp, fontFamily = CairoFontFamily)
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -994,7 +1003,7 @@ private fun ReceiptPaperContent(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 7. Barcode Section (80% Width Barcode)
+            // 7. Barcode Section (70% Width Barcode)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1009,17 +1018,19 @@ private fun ReceiptPaperContent(
                 )
 
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.80f),
+                    modifier = Modifier.fillMaxWidth(0.70f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.fillMaxWidth().height(40.dp)) {
-                        val barWidth = 3f
-                        var x = (size.width - (35 * barWidth * 2)) / 2f
+                    Canvas(modifier = Modifier.fillMaxWidth().height(36.dp)) {
                         val patterns = listOf(3, 1, 2, 1, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 2, 1, 4, 1, 2)
+                        val totalUnits = patterns.sum().toFloat()
+                        val unitWidth = size.width / totalUnits
+                        var currentX = 0f
                         patterns.forEachIndexed { i, w ->
                             val color = if (i % 2 == 0) Color.Black else Color.Transparent
-                            drawRect(color, Offset(x, 0f), androidx.compose.ui.geometry.Size(w * barWidth, size.height))
-                            x += w * barWidth
+                            val wPx = w * unitWidth
+                            drawRect(color, Offset(currentX, 0f), androidx.compose.ui.geometry.Size(wPx, size.height))
+                            currentX += wPx
                         }
                     }
                 }

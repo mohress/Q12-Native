@@ -759,7 +759,7 @@ private fun ReportReceiptPaperSheet(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(IntrinsicSize.Min)
+                                            
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -802,7 +802,7 @@ private fun ReportReceiptPaperSheet(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(IntrinsicSize.Min)
+                                            
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -986,7 +986,7 @@ private fun ReportReceiptPaperSheet(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(IntrinsicSize.Min)
+                                            
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -1042,7 +1042,7 @@ private fun ReportReceiptPaperSheet(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(IntrinsicSize.Min)
+                                                
                                         ) {
                                             Box(
                                                 modifier = Modifier

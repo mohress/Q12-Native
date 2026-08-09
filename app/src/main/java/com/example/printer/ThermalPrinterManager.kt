@@ -331,7 +331,7 @@ object ThermalPrinterManager {
 
         // Column Header Text
         paintSub.textAlign = Paint.Align.CENTER
-        canvas.drawText("السعر", (x0 + x1) / 2f, currentY + 22f, paintSub)
+        canvas.drawText("سعر الكيلو", (x0 + x1) / 2f, currentY + 22f, paintSub)
         canvas.drawText("الوزن", (x1 + x2) / 2f, currentY + 22f, paintSub)
         canvas.drawText("العدد", (x2 + x3) / 2f, currentY + 22f, paintSub)
         canvas.drawText("الصنف", (x3 + x4) / 2f, currentY + 22f, paintSub)
@@ -415,21 +415,24 @@ object ThermalPrinterManager {
         drawDashedLine(currentY)
         currentY += 22f
 
-        // 7. Barcode Section
-        val barWidth = 3f
-        var startX = (paperWidthPx - (30 * barWidth)) / 2f
-        val patterns = listOf(3, 1, 2, 1, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 2)
+        // 7. Barcode Section (70% Width)
+        val barcodeWidth = printableWidth * 0.70f
+        var startX = margin + (printableWidth - barcodeWidth) / 2f
+        val patterns = listOf(3, 1, 2, 1, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 2, 1, 4, 1, 2)
+        val totalUnits = patterns.sum().toFloat()
+        val unitWidth = barcodeWidth / totalUnits
+
         patterns.forEachIndexed { i, w ->
             if (i % 2 == 0) {
-                canvas.drawRect(startX, currentY, startX + (w * barWidth), currentY + 30f, paintLine)
+                canvas.drawRect(startX, currentY, startX + (w * unitWidth), currentY + 32f, paintLine)
             }
-            startX += w * barWidth
+            startX += w * unitWidth
         }
-        currentY += 46f
+        currentY += 44f
 
         paintSub.textAlign = Paint.Align.CENTER
         paintSub.textSize = 14f
-        canvas.drawText("0 895529 020666", paperWidthPx / 2f, currentY, paintSub)
+        canvas.drawText("* INV-${invoice.code} *", paperWidthPx / 2f, currentY, paintSub)
         currentY += 24f
 
         // 8. Footer Info

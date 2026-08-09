@@ -352,15 +352,13 @@ fun ImportInvoiceCard(
         border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Far Right Thick Green Stripe Accent (matches Image 2)
             Box(
                 modifier = Modifier
                     .width(6.dp)
-                    .fillMaxHeight()
+                    .height(80.dp)
                     .background(
                         DarkForestGreen,
                         shape = RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp)
