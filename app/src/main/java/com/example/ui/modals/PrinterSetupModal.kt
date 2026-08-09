@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import com.example.printer.PrinterDevice
 import com.example.printer.ThermalPrinterManager
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,10 +39,28 @@ fun PrinterSetupModal(
     onPrintTestPage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var isScanning by remember { mutableStateOf(false) }
     var paperSize by remember { mutableStateOf("58mm") }
     var printMode by remember { mutableStateOf("صورة Raster (يدعم العربية 100%)") }
     val devices = remember { mutableStateOf(ThermalPrinterManager.getPairedBluetoothDevices()) }
+    var showManualAdd by remember { mutableStateOf(false) }
+    var manualName by remember { mutableStateOf("") }
+    var manualAddress by remember { mutableStateOf("") }
+
+    fun runScan() {
+        coroutineScope.launch {
+            isScanning = true
+            ThermalPrinterManager.startDiscovery()
+            delay(1200)
+            devices.value = ThermalPrinterManager.getPairedBluetoothDevices()
+            isScanning = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        runScan()
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -211,7 +231,7 @@ fun PrinterSetupModal(
                 }
             }
 
-            // Devices Section Header with Scan Button
+            // Devices Section Header with Active Search Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -224,25 +244,56 @@ fun PrinterSetupModal(
                     color = TextPrimaryDark
                 )
 
-                TextButton(
-                    onClick = {
-                        isScanning = true
-                        devices.value = ThermalPrinterManager.getPairedBluetoothDevices()
-                        isScanning = false
-                    }
+                Button(
+                    onClick = { runScan() },
+                    enabled = !isScanning,
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp), tint = MediumForestGreen)
-                        Text(if (isScanning) "جاري تحديث القائمة..." else "تحديث قوالب البلوتوث", fontSize = 12.sp, color = MediumForestGreen)
+                        if (isScanning) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Rounded.BluetoothSearching, contentDescription = null, modifier = Modifier.size(16.dp), tint = GoldLicense)
+                        }
+                        Text(if (isScanning) "جاري البحث..." else "البحث عن الطابعات", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
+            // Scanning progress indicator
+            if (isScanning) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MediumForestGreen,
+                        trackColor = LightForestGreen.copy(alpha = 0.3f)
+                    )
+                    Text(
+                        "جاري فحص الإشارة ومسح طابعات البلوتوث الحرارية المجاورة...",
+                        fontSize = 11.sp,
+                        color = MediumForestGreen,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             // Device List
-            if (devices.value.isEmpty()) {
+            if (devices.value.isEmpty() && !isScanning) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = CardSurfaceWhite,
@@ -256,13 +307,13 @@ fun PrinterSetupModal(
                     ) {
                         Icon(Icons.Rounded.BluetoothSearching, contentDescription = null, tint = TextSecondaryMuted, modifier = Modifier.size(32.dp))
                         Text(
-                            "لم يتم العثور على طابعات بلوتوث مقترنة",
+                            "لم يتم العثور على طابعات بلوتوث",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimaryDark
                         )
                         Text(
-                            "يرجى تشغيل البلوتوث واقتران الطابعة الحرارية من إعدادات النظام أولاً، ثم اضغط تحديث.",
+                            "اضغط على زر البحث أعلاه لإعادة فحص الأجهزة أو تأكد من تشغيل البلوتوث.",
                             fontSize = 11.sp,
                             color = TextSecondaryMuted,
                             textAlign = TextAlign.Center
@@ -273,92 +324,160 @@ fun PrinterSetupModal(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 200.dp),
+                        .heightIn(max = 220.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(devices.value) { dev ->
-                    val isThisConnected = printerConnected && connectedDeviceName.contains(dev.name.take(6))
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onConnectDevice(dev)
-                            },
-                        color = if (isThisConnected) EmeraldSuccessLight else CardSurfaceWhite,
-                        shape = RoundedCornerShape(14.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (isThisConnected) EmeraldSuccess else GlassBorder
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        val isThisConnected = printerConnected && connectedDeviceName.contains(dev.name.take(6))
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onConnectDevice(dev)
+                                },
+                            color = if (isThisConnected) EmeraldSuccessLight else CardSurfaceWhite,
+                            shape = RoundedCornerShape(14.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isThisConnected) EmeraldSuccess else GlassBorder
+                            )
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isThisConnected) EmeraldSuccess else DarkForestGreen.copy(alpha = 0.1f)),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Icon(
-                                        Icons.Rounded.Bluetooth,
-                                        contentDescription = null,
-                                        tint = if (isThisConnected) Color.White else DarkForestGreen,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isThisConnected) EmeraldSuccess else DarkForestGreen.copy(alpha = 0.1f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.Bluetooth,
+                                            contentDescription = null,
+                                            tint = if (isThisConnected) Color.White else DarkForestGreen,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            dev.name,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextPrimaryDark
+                                        )
+                                        Text(
+                                            "العنوان: ${dev.address} | ${dev.paperSize}",
+                                            fontSize = 11.sp,
+                                            color = TextSecondaryMuted
+                                        )
+                                    }
                                 }
 
-                                Column {
-                                    Text(
-                                        dev.name,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimaryDark
-                                    )
-                                    Text(
-                                        "العنوان: ${dev.address} | ${dev.paperSize}",
-                                        fontSize = 11.sp,
-                                        color = TextSecondaryMuted
-                                    )
-                                }
-                            }
-
-                            if (isThisConnected) {
-                                Surface(
-                                    color = EmeraldSuccess,
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        "متصل",
-                                        fontSize = 10.sp,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { onConnectDevice(dev) },
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
-                                ) {
-                                    Text("اتصال", fontSize = 11.sp)
+                                if (isThisConnected) {
+                                    Surface(
+                                        color = EmeraldSuccess,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            "متصل الآن",
+                                            fontSize = 11.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = { onConnectDevice(dev) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MediumForestGreen),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("اقتران وتوصيل", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Action Buttons
+            // Manual printer addition option
+            OutlinedButton(
+                onClick = { showManualAdd = !showManualAdd },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (showManualAdd) Icons.Rounded.ExpandLess else Icons.Rounded.AddCircleOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text("إضافة طابعة حرارية برقم MAC أو اسم يدوياً", fontSize = 11.sp)
+                }
+            }
+
+            AnimatedVisibility(visible = showManualAdd) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = CardSurfaceWhite,
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = manualName,
+                            onValueChange = { manualName = it },
+                            label = { Text("اسم الطابعة (مثال: RPP02N)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = manualAddress,
+                            onValueChange = { manualAddress = it },
+                            label = { Text("عنوان MAC (مثال: 00:11:22:33:44:55)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Button(
+                            onClick = {
+                                if (manualName.isNotBlank() && manualAddress.isNotBlank()) {
+                                    val customDev = PrinterDevice(manualName, manualAddress, isPaired = true, paperSize = paperSize)
+                                    devices.value = devices.value + customDev
+                                    onConnectDevice(customDev)
+                                    manualName = ""
+                                    manualAddress = ""
+                                    showManualAdd = false
+                                }
+                            },
+                            enabled = manualName.isNotBlank() && manualAddress.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("اقتران الطابعة اليدوية", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -390,3 +509,4 @@ fun PrinterSetupModal(
         }
     }
 }
+

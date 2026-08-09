@@ -103,7 +103,10 @@ data class AlwaSettingsEntity(
     val immersiveMode: Boolean = false,
     val animationsEnabled: Boolean = true,
     val notificationsEnabled: Boolean = true,
-    val fontScale: Float = 1.0f
+    val fontScale: Float = 1.0f,
+    val pinCode: String = "1234",
+    val receiptCopies: Int = 1,
+    val receiptFooterNote: String = "البضاعة المباعة لا ترد ولا تستبدل بعد مغادرة العلوة"
 )
 
 // Helpers to convert domain models <-> entities & JSON string conversions
@@ -133,12 +136,16 @@ fun List<ImportCrop>.toCropsJson(): String {
 
 fun String.toImportCropList(): List<ImportCrop> {
     if (isEmpty()) return emptyList()
-    val list = mutableListOf<ImportCrop>()
-    val array = JSONArray(this)
-    for (i in 0 until array.length()) {
-        list.add(array.getJSONObject(i).toImportCrop())
+    return try {
+        val list = mutableListOf<ImportCrop>()
+        val array = JSONArray(this)
+        for (i in 0 until array.length()) {
+            list.add(array.getJSONObject(i).toImportCrop())
+        }
+        list
+    } catch (e: Exception) {
+        emptyList()
     }
-    return list
 }
 
 fun SaleCropItem.toJsonObject(): JSONObject {
@@ -165,12 +172,16 @@ fun List<SaleCropItem>.toItemsJson(): String {
 
 fun String.toSaleCropItemList(): List<SaleCropItem> {
     if (isEmpty()) return emptyList()
-    val list = mutableListOf<SaleCropItem>()
-    val array = JSONArray(this)
-    for (i in 0 until array.length()) {
-        list.add(array.getJSONObject(i).toSaleCropItem())
+    return try {
+        val list = mutableListOf<SaleCropItem>()
+        val array = JSONArray(this)
+        for (i in 0 until array.length()) {
+            list.add(array.getJSONObject(i).toSaleCropItem())
+        }
+        list
+    } catch (e: Exception) {
+        emptyList()
     }
-    return list
 }
 
 // Domain mapper extensions

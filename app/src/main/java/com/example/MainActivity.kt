@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,12 +10,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.example.data.models.SalesInvoice
 import com.example.ui.AlwaViewModel
 import com.example.ui.components.AppHeader
 import com.example.ui.components.BottomNavBar
+import com.example.ui.components.ReportThermalReceiptPreview
 import com.example.ui.components.ThermalReceiptPreview
 import com.example.ui.modals.*
 import com.example.ui.screens.*
@@ -23,7 +26,14 @@ import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: AlwaViewModel by viewModels()
+    private val viewModel: AlwaViewModel by viewModels {
+        object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return AlwaViewModel(AlwaApplication.instance.safeRepository) as T
+            }
+        }
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +42,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MyApplicationTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    val fontScale by viewModel.fontScale.collectAsState()
+                    val currentDensity = androidx.compose.ui.platform.LocalDensity.current
+
+                    CompositionLocalProvider(
+                        LocalLayoutDirection provides LayoutDirection.Rtl,
+                        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+                            density = currentDensity.density,
+                            fontScale = currentDensity.fontScale * fontScale
+                        )
+                    ) {
 
                     val splashVisible by viewModel.splashVisible.collectAsState()
                     val isAppLocked by viewModel.isAppLocked.collectAsState()
@@ -72,11 +91,37 @@ class MainActivity : ComponentActivity() {
                     val losses by viewModel.losses.collectAsState()
                     val logs by viewModel.logs.collectAsState()
 
-                    val fontScale by viewModel.fontScale.collectAsState()
                     val passcodeEnabled by viewModel.passcodeEnabled.collectAsState()
+                    val pinCode by viewModel.pinCode.collectAsState()
                     val immersiveMode by viewModel.immersiveMode.collectAsState()
                     val animationsEnabled by viewModel.animationsEnabled.collectAsState()
                     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+                    val receiptCopies by viewModel.receiptCopies.collectAsState()
+                    val receiptFooterNote by viewModel.receiptFooterNote.collectAsState()
+                    val userToast by viewModel.userToast.collectAsState()
+
+                    val context = LocalContext.current
+                    val activity = context as? ComponentActivity
+                    LaunchedEffect(immersiveMode) {
+                        activity?.window?.let { window ->
+                            val controller = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+                            if (immersiveMode) {
+                                controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                                controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                            } else {
+                                controller.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                            }
+                        }
+                    }
+
+                    LaunchedEffect(userToast) {
+                        userToast?.let { msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            viewModel.clearUserToast()
+                        }
+                    }
+
+
 
                     // Modal states
                     val showNewImportSheet by viewModel.showNewImportSheet.collectAsState()
@@ -93,6 +138,8 @@ class MainActivity : ComponentActivity() {
                     val showLicenseLockDialog by viewModel.showLicenseLockDialog.collectAsState()
                     val showPrintPreviewModal by viewModel.showPrintPreviewModal.collectAsState()
                     val selectedPrintInvoice by viewModel.selectedPrintInvoice.collectAsState()
+                    val showReportPrintModal by viewModel.showReportPrintModal.collectAsState()
+                    val reportType by viewModel.reportType.collectAsState()
                     val showPrinterSetupModal by viewModel.showPrinterSetupModal.collectAsState()
                     val printerDevice by viewModel.printerDevice.collectAsState()
 
@@ -144,6 +191,7 @@ class MainActivity : ComponentActivity() {
                                             importInvoices = importInvoices,
                                             onNewImportClick = viewModel::openNewImportSheet,
                                             onViewDetails = viewModel::openImportDetails,
+                                             onDeleteInvoice = viewModel::deleteImportInvoice,
                                             formatIQD = viewModel::formatIQD
                                         )
                                         1 -> SalesScreen(
@@ -154,6 +202,7 @@ class MainActivity : ComponentActivity() {
                                             salesInvoices = salesInvoices,
                                             onNewSaleClick = viewModel::openNewSalesSheet,
                                             onPrintInvoice = viewModel::openPrintPreview,
+                                             onDeleteInvoice = viewModel::deleteSalesInvoice,
                                             formatIQD = viewModel::formatIQD
                                         )
                                         2 -> AccountsScreen(
@@ -180,6 +229,9 @@ class MainActivity : ComponentActivity() {
                                             onOpenNewExpense = viewModel::openNewExpenseSheet,
                                             onOpenNewLoss = viewModel::openNewLossSheet,
                                             onDepositCash = { viewModel.depositCash(5000000L) },
+                                            onOpenProfitReportPreview = viewModel::openProfitReportPreview,
+                                            onOpenSalesAuditPreview = viewModel::openSalesAuditPreview,
+                                            onOpenInventoryAuditPreview = viewModel::openInventoryAuditPreview,
                                             formatIQD = viewModel::formatIQD
                                         )
                                         4 -> SettingsScreen(
@@ -191,16 +243,25 @@ class MainActivity : ComponentActivity() {
                                             onSaveAlwaInfo = viewModel::updateAlwaInfo,
                                             printerConnected = printerConnected,
                                             onTogglePrinter = viewModel::togglePrinterConnection,
+                                            onPrintTestPage = viewModel::printTestInvoice,
                                             fontScale = fontScale,
                                             onFontScaleChange = viewModel::setFontScale,
                                             passcodeEnabled = passcodeEnabled,
                                             onTogglePasscode = viewModel::togglePasscode,
+                                            pinCode = pinCode,
+                                            onUpdatePinCode = viewModel::updatePinCode,
                                             immersiveMode = immersiveMode,
                                             onToggleImmersive = viewModel::toggleImmersiveMode,
                                             animationsEnabled = animationsEnabled,
                                             onToggleAnimations = viewModel::toggleAnimations,
                                             notificationsEnabled = notificationsEnabled,
                                             onToggleNotifications = viewModel::toggleNotifications,
+                                            receiptCopies = receiptCopies,
+                                            receiptFooterNote = receiptFooterNote,
+                                            onSaveReceiptSettings = viewModel::updateReceiptSettings,
+                                            onExportBackup = viewModel::exportBackup,
+                                            onImportBackup = viewModel::importBackup,
+                                            onResetData = viewModel::resetSystemData,
                                             onOpenLicenseModal = viewModel::openLicenseLock
                                         )
                                     }
@@ -216,15 +277,17 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        if (showImportDetailsModal && selectedImportInvoice != null) {
-                            ImportInvoiceDetailsSheet(
-                                invoice = selectedImportInvoice!!,
-                                onDismiss = viewModel::closeImportDetails,
-                                onSettleAccount = { invoice ->
-                                    viewModel.openPaymentModal(invoice.farmerName, (invoice.totalEstimatedSalesIQD * 0.98).toLong())
-                                },
-                                formatIQD = viewModel::formatIQD
-                            )
+                        selectedImportInvoice?.let { invoice ->
+                            if (showImportDetailsModal) {
+                                ImportInvoiceDetailsSheet(
+                                    invoice = invoice,
+                                    onDismiss = viewModel::closeImportDetails,
+                                    onSettleAccount = { inv ->
+                                        viewModel.openPaymentModal(inv.farmerName, (inv.totalEstimatedSalesIQD * 0.98).toLong())
+                                    },
+                                    formatIQD = viewModel::formatIQD
+                                )
+                            }
                         }
 
                         if (showNewSalesSheet) {
@@ -298,25 +361,55 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // Thermal Receipt Print Modal Sheet
-                        if (showPrintPreviewModal && selectedPrintInvoice != null) {
-                            val invoice = selectedPrintInvoice!!
-                            ModalBottomSheet(
-                                onDismissRequest = viewModel::closePrintPreview,
-                                containerColor = BackgroundSoft
-                            ) {
-                                ThermalReceiptPreview(
-                                    invoice = invoice,
-                                    alwaName = alwaName,
-                                    ownerName = ownerName,
-                                    phoneNumber = phoneNumber,
-                                    location = location,
-                                    accountantName = accountantName,
-                                    printerConnected = printerConnected,
-                                    onOpenPrinterSetup = viewModel::openPrinterSetupModal,
-                                    onPrintBluetooth = viewModel::closePrintPreview,
-                                    onPrintSystem = viewModel::closePrintPreview,
-                                    onShareImage = viewModel::closePrintPreview
-                                )
+                        selectedPrintInvoice?.let { invoice ->
+                            if (showPrintPreviewModal) {
+                                ModalBottomSheet(
+                                    onDismissRequest = viewModel::closePrintPreview,
+                                    containerColor = BackgroundSoft
+                                ) {
+                                    ThermalReceiptPreview(
+                                        invoice = invoice,
+                                        alwaName = alwaName,
+                                        ownerName = ownerName,
+                                        phoneNumber = phoneNumber,
+                                        location = location,
+                                        accountantName = accountantName,
+                                        printerConnected = printerConnected,
+                                        onOpenPrinterSetup = viewModel::openPrinterSetupModal,
+                                        onPrintBluetooth = viewModel::closePrintPreview,
+                                        onPrintSystem = viewModel::closePrintPreview,
+                                        onShareImage = viewModel::closePrintPreview
+                                    )
+                                }
+                            }
+                        }
+
+                        // Report Thermal Receipt Print Modal Sheet
+                        reportType?.let { type ->
+                            if (showReportPrintModal) {
+                                ModalBottomSheet(
+                                    onDismissRequest = viewModel::closeReportPrintModal,
+                                    containerColor = BackgroundSoft
+                                ) {
+                                    ReportThermalReceiptPreview(
+                                        reportType = type,
+                                        alwaName = alwaName,
+                                        ownerName = ownerName,
+                                        phoneNumber = phoneNumber,
+                                        location = location,
+                                        accountantName = accountantName,
+                                        cashBoxBalance = cashBoxBalance,
+                                        netProfit = netProfit,
+                                        salesInvoices = salesInvoices,
+                                        importInvoices = importInvoices,
+                                        expenses = expenses,
+                                        losses = losses,
+                                        printerConnected = printerConnected,
+                                        onOpenPrinterSetup = viewModel::openPrinterSetupModal,
+                                        onClose = viewModel::closeReportPrintModal,
+                                        formatIQD = viewModel::formatIQD
+                                    )
+                                }
                             }
                         }
                     }

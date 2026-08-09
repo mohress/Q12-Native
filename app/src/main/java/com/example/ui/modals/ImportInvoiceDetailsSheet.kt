@@ -172,7 +172,7 @@ fun ImportInvoiceDetailsSheet(
 
                             // Progress indicator
                             LinearProgressIndicator(
-                                progress = { invoice.progressPercent },
+                                progress = invoice.progressPercent,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(8.dp)

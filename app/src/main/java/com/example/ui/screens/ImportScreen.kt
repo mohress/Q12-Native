@@ -1,12 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.models.ImportInvoice
@@ -33,6 +35,7 @@ fun ImportScreen(
     importInvoices: List<ImportInvoice>,
     onNewImportClick: () -> Unit,
     onViewDetails: (ImportInvoice) -> Unit,
+    onDeleteInvoice: (String) -> Unit = {},
     formatIQD: (Long) -> String,
     modifier: Modifier = Modifier
 ) {
@@ -54,171 +57,7 @@ fun ImportScreen(
         contentPadding = PaddingValues(top = 12.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. New Year Rollover Banner (بنر تدوير السنة المالية)
-        item {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, RoundedCornerShape(20.dp)),
-                color = MintGreen,
-                shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, LightForestGreen.copy(alpha = 0.5f))
-            ) {
-                BoxWithConstraints(modifier = Modifier.padding(16.dp)) {
-                    val isTablet = maxWidth > 600.dp
-                    if (isTablet) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(MediumForestGreen),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Celebration,
-                                        contentDescription = "New Year",
-                                        tint = GoldLicense,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = "تجهيز حسابات السنة الجديدة",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = DarkForestGreen,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "نظام الأمان والتدوير التلقائي جاهز. تم تأمين السجلات وأرشفة ديون الفلاحين والزبائن بأعلى درجات الموثوقية.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = TextSecondaryMuted
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = EmeraldSuccess, modifier = Modifier.size(16.dp))
-                                    Text("أرشفة تلقائية", fontSize = 11.sp, color = DarkForestGreen, fontWeight = FontWeight.Bold)
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.Transparent
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(
-                                                Brush.horizontalGradient(listOf(GoldLicense, Color(0xFFE65100))),
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text(
-                                            text = "متبقي 5 أيام على نهاية السنة ⏳",
-                                            color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(MediumForestGreen),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Celebration,
-                                            contentDescription = "New Year",
-                                            tint = GoldLicense,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = "تجهيز حسابات السنة الجديدة",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = DarkForestGreen,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.Transparent
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(
-                                                Brush.horizontalGradient(listOf(GoldLicense, Color(0xFFE65100))),
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "متبقي 5 أيام ⏳",
-                                            color = Color.White,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-
-                            Text(
-                                text = "نظام الأمان والتدوير التلقائي جاهز. تم تأمين السجلات وأرشفة ديون الفلاحين والزبائن بأعلى درجات الموثوقية.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondaryMuted
-                            )
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = EmeraldSuccess, modifier = Modifier.size(16.dp))
-                                    Text("أرشفة تلقائية", fontSize = 11.sp, color = DarkForestGreen, fontWeight = FontWeight.Bold)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = EmeraldSuccess, modifier = Modifier.size(16.dp))
-                                    Text("ترحيل الديون بضغطة واحدة", fontSize = 11.sp, color = DarkForestGreen, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Import Accent Card (بطاقة الاستيراد العرضية)
+        // 1. Import Accent Card (بطاقة الاستيراد العرضية)
         item {
             Surface(
                 modifier = Modifier
@@ -269,12 +108,14 @@ fun ImportScreen(
                                             text = "إدارة فواتير الاستيراد",
                                             color = Color.White,
                                             style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.ExtraBold
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontFamily = CairoFontFamily
                                         )
                                         Text(
                                             text = "سجل البضائع المستلمة من الفلاحين وتتبع تقدم بيعها دقيقة بدقيقة",
                                             color = MintGreen,
-                                            style = MaterialTheme.typography.bodyMedium
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontFamily = CairoFontFamily
                                         )
                                     }
                                 }
@@ -299,7 +140,8 @@ fun ImportScreen(
                                             text = "فاتورة استيراد جديدة",
                                             color = DarkForestGreen,
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = CairoFontFamily
                                         )
                                     }
                                 }
@@ -316,12 +158,14 @@ fun ImportScreen(
                                             text = "إدارة فواتير الاستيراد",
                                             color = Color.White,
                                             style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.ExtraBold
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontFamily = CairoFontFamily
                                         )
                                         Text(
                                             text = "سجل البضائع المستلمة وتتبع تقدم بيعها دقيقة بدقيقة",
                                             color = MintGreen,
                                             style = MaterialTheme.typography.bodyMedium,
+                                            fontFamily = CairoFontFamily,
                                             modifier = Modifier.padding(top = 2.dp)
                                         )
                                     }
@@ -355,7 +199,8 @@ fun ImportScreen(
                                             text = "فاتورة استيراد جديدة",
                                             color = DarkForestGreen,
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = CairoFontFamily
                                         )
                                     }
                                 }
@@ -366,7 +211,7 @@ fun ImportScreen(
             }
         }
 
-        // 3. Search & Filter Chips Bar
+        // 2. Search & Filter Chips Bar
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
@@ -375,7 +220,7 @@ fun ImportScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(2.dp, RoundedCornerShape(16.dp)),
-                    placeholder = { Text("ابحث باسم الفلاح أو رمز الفاتورة...", fontSize = 13.sp) },
+                    placeholder = { Text("ابحث باسم الفلاح أو رمز الفاتورة...", fontSize = 13.sp, fontFamily = CairoFontFamily) },
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MediumForestGreen) },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
@@ -400,7 +245,8 @@ fun ImportScreen(
                                 Text(
                                     text = chip,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color.White else TextPrimaryDark
+                                    color = if (isSelected) Color.White else TextPrimaryDark,
+                                    fontFamily = CairoFontFamily
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
@@ -419,354 +265,270 @@ fun ImportScreen(
             }
         }
 
-        // 4. Import Invoices Horizontal Row Cards (البطاقات السطرية والعرضية المحدثة)
+        // 3. Import Invoices Cards (Redesigned Exact Match to Screenshot Image 2)
         items(filteredInvoices, key = { it.id }) { invoice ->
-            Surface(
+            ImportInvoiceCard(
+                invoice = invoice,
+                onViewDetails = onViewDetails,
+                onDeleteInvoice = onDeleteInvoice,
+                formatIQD = formatIQD
+            )
+        }
+    }
+}
+
+@Composable
+fun ImportInvoiceCard(
+    invoice: ImportInvoice,
+    onViewDetails: (ImportInvoice) -> Unit,
+    onDeleteInvoice: (String) -> Unit,
+    formatIQD: (Long) -> String
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp)),
+        color = Color.White,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+        ) {
+            // Far Right Thick Green Stripe Accent (matches Image 2)
+            Box(
+                modifier = Modifier
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .background(
+                        DarkForestGreen,
+                        shape = RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp)
+                    )
+            )
+
+            // Card Inner Content Container
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(3.dp, RoundedCornerShape(18.dp)),
-                color = CardSurfaceWhite,
-                shape = RoundedCornerShape(18.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                BoxWithConstraints(
-                    modifier = Modifier.padding(14.dp)
+                // 1. Far Right ID Badge & Date
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.widthIn(min = 75.dp)
                 ) {
-                    val isTabletLandscape = maxWidth > 650.dp
+                    val codeClean = if (invoice.code.contains("#")) invoice.code else "ID: #${invoice.code.takeLast(4)}"
+                    Surface(
+                        color = DarkForestGreen,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = codeClean,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = CairoFontFamily,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    val dateOnly = invoice.date.split(" ").firstOrNull() ?: invoice.date
+                    Text(
+                        text = dateOnly,
+                        fontSize = 11.sp,
+                        color = TextSecondaryMuted,
+                        fontFamily = CairoFontFamily
+                    )
+                }
 
-                    if (isTabletLandscape) {
-                        // Wide Screen: Single Horizontal Table-Style Row with 4 Smart Columns
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                // 2. Farmer/Supplier Name & Vehicle Type
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.widthIn(min = 140.dp, max = 180.dp)
+                ) {
+                    Text(
+                        text = invoice.farmerName,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryDark,
+                        fontFamily = CairoFontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "نوع السيارة: ${invoice.vehicleType}",
+                        fontSize = 11.5.sp,
+                        color = TextSecondaryMuted,
+                        fontFamily = CairoFontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 3. Crops Stack (Pills Container)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.widthIn(min = 210.dp, max = 270.dp)
+                ) {
+                    invoice.crops.forEach { crop ->
+                        Surface(
+                            color = Color(0xFFF4F8F5),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFD0E4D7))
                         ) {
-                            // Column 1: Code & Farmer Info
-                            Column(
-                                modifier = Modifier.weight(1.2f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Surface(
-                                        color = DarkForestGreen.copy(alpha = 0.1f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = invoice.code,
-                                            color = DarkForestGreen,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = invoice.farmerName,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = TextPrimaryDark,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                val emoji = getCropEmoji(crop.cropName)
                                 Text(
-                                    text = "${invoice.vehicleType} • ${invoice.date}",
-                                    fontSize = 11.sp,
-                                    color = TextSecondaryMuted
-                                )
-                            }
-
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .height(44.dp)
-                                    .width(1.dp),
-                                color = GlassBorder
-                            )
-
-                            // Column 2: Received Crops Chips
-                            Column(
-                                modifier = Modifier
-                                    .weight(1.5f)
-                                    .padding(horizontal = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "الأصناف المستلمة:",
-                                    fontSize = 10.sp,
+                                    text = "$emoji ${crop.cropName}",
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextSecondaryMuted
+                                    color = TextPrimaryDark,
+                                    fontFamily = CairoFontFamily,
+                                    maxLines = 1
                                 )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    invoice.crops.take(2).forEach { crop ->
-                                        Surface(
-                                            color = BackgroundSoft,
-                                            shape = RoundedCornerShape(8.dp),
-                                            border = androidx.compose.foundation.BorderStroke(0.5.dp, GlassBorder)
-                                        ) {
-                                            Text(
-                                                text = "${crop.cropName} (${crop.boxCount}ص) • ${crop.netWeightKg}كغم",
-                                                fontSize = 11.sp,
-                                                color = TextPrimaryDark,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                            )
-                                        }
-                                    }
-                                    if (invoice.crops.size > 2) {
-                                        Text("+${invoice.crops.size - 2}", fontSize = 10.sp, color = MediumForestGreen, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
 
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .height(44.dp)
-                                    .width(1.dp),
-                                color = GlassBorder
-                            )
+                                Spacer(modifier = Modifier.weight(1f))
 
-                            // Column 3: Selling Progress & Status
-                            Column(
-                                modifier = Modifier
-                                    .weight(1.2f)
-                                    .padding(horizontal = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Surface(
+                                    color = Color(0xFFD5E8DB),
+                                    shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Surface(
-                                        color = if (invoice.status.contains("تسوية")) RedWarningLight else MintGreen,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = invoice.status,
-                                            color = if (invoice.status.contains("تسوية")) RedWarningDark else DarkForestGreen,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                        )
-                                    }
                                     Text(
-                                        text = "${(invoice.progressPercent * 100).toInt()}% مباع",
+                                        text = "${String.format("%,d", crop.netWeightKg.toInt())} كجم",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = DarkForestGreen
-                                    )
-                                }
-                                LinearProgressIndicator(
-                                    progress = { invoice.progressPercent },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
-                                    color = if (invoice.progressPercent >= 1.0f) EmeraldSuccess else MediumForestGreen,
-                                    trackColor = BackgroundSoft
-                                )
-                            }
-
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .height(44.dp)
-                                    .width(1.dp),
-                                color = GlassBorder
-                            )
-
-                            // Column 4: Total IQD & Action Buttons
-                            Row(
-                                modifier = Modifier
-                                    .weight(1.4f)
-                                    .padding(start = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text("التقديري:", fontSize = 10.sp, color = TextSecondaryMuted)
-                                    Text(
-                                        text = formatIQD(invoice.totalEstimatedSalesIQD),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = DarkForestGreen
-                                    )
-                                }
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    OutlinedButton(
-                                        onClick = { onViewDetails(invoice) },
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text("التفاصيل", fontSize = 11.sp)
-                                    }
-
-                                    Button(
-                                        onClick = { onViewDetails(invoice) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (invoice.progressPercent >= 1.0f) EmeraldSuccess else SkyBlueInfo
-                                        ),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(
-                                            text = if (invoice.progressPercent >= 1.0f) "تسوية" else "متابعة",
-                                            color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Compact / Standard Screen: Sleek Row-Based Card Layout
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // Top Row: Code, Name, Vehicle & Status Badge
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Surface(
-                                        color = DarkForestGreen.copy(alpha = 0.1f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = invoice.code,
-                                            color = DarkForestGreen,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = invoice.farmerName,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = TextPrimaryDark,
-                                        fontWeight = FontWeight.Bold
+                                        color = DarkForestGreen,
+                                        fontFamily = CairoFontFamily,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
 
                                 Surface(
-                                    color = if (invoice.status.contains("تسوية")) RedWarningLight else MintGreen,
-                                    shape = RoundedCornerShape(10.dp)
+                                    color = Color(0xFFD5E8DB),
+                                    shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = invoice.status,
-                                        color = if (invoice.status.contains("تسوية")) RedWarningDark else DarkForestGreen,
-                                        fontSize = 10.sp,
+                                        text = "${crop.boxCount} صندوق",
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        color = DarkForestGreen,
+                                        fontFamily = CairoFontFamily,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
+                        }
+                    }
+                }
 
-                            // Middle Row: Horizontal Summary Chips of Crops & Progress Bar side by side
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    invoice.crops.forEach { crop ->
-                                        Surface(
-                                            color = BackgroundSoft,
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                text = "${crop.cropName}: ${crop.boxCount}ص (${crop.netWeightKg}كغم)",
-                                                fontSize = 11.sp,
-                                                color = TextPrimaryDark,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                // 4. Sales Progress & Remaining Info
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.widthIn(min = 150.dp, max = 190.dp)
+                ) {
+                    val percentInt = (invoice.progressPercent * 100).toInt()
+                    Text(
+                        text = "نسبة المبيعات: $percentInt%",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryDark,
+                        fontFamily = CairoFontFamily
+                    )
+                    LinearProgressIndicator(
+                        progress = invoice.progressPercent,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = DarkForestGreen,
+                        trackColor = Color(0xFFE0E0E0)
+                    )
+                    val totalKg = invoice.crops.sumOf { it.netWeightKg }.toInt()
+                    val totalBoxes = invoice.crops.sumOf { it.boxCount }
+                    val remainingKg = (totalKg * (1 - invoice.progressPercent)).toInt()
+                    val remainingBoxes = (totalBoxes * (1 - invoice.progressPercent)).toInt()
+                    Text(
+                        text = "(متبقي: ${String.format("%,d", remainingKg)} كجم / $remainingBoxes صندوق)",
+                        fontSize = 11.sp,
+                        color = TextSecondaryMuted,
+                        fontFamily = CairoFontFamily
+                    )
+                }
 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier.width(120.dp)
-                                ) {
-                                    LinearProgressIndicator(
-                                        progress = { invoice.progressPercent },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(3.dp)),
-                                        color = if (invoice.progressPercent >= 1.0f) EmeraldSuccess else MediumForestGreen,
-                                        trackColor = BackgroundSoft
-                                    )
-                                    Text(
-                                        text = "${(invoice.progressPercent * 100).toInt()}%",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = DarkForestGreen
-                                    )
-                                }
-                            }
+                // 5. Status Badge (⏳ قيد البيع)
+                Surface(
+                    color = Color(0xFFFFF8E1),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFFE082))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("⏳", fontSize = 12.sp)
+                        Text(
+                            text = invoice.status,
+                            color = Color(0xFFF57F17),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = CairoFontFamily
+                        )
+                    }
+                }
 
-                            HorizontalDivider(color = GlassBorder)
+                // Dotted Divider Line
+                DottedVerticalDivider(
+                    modifier = Modifier
+                        .height(42.dp)
+                        .width(1.dp)
+                )
 
-                            // Bottom Row: Total IQD & Action Buttons
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text("إجمالي التقديري:", fontSize = 11.sp, color = TextSecondaryMuted)
-                                    Text(
-                                        text = formatIQD(invoice.totalEstimatedSalesIQD),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = DarkForestGreen
-                                    )
-                                }
+                // 6. Action Buttons Column (Far Left: حذف | تفاصيل)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Delete Button
+                    OutlinedButton(
+                        onClick = { onDeleteInvoice(invoice.id) },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, RedWarningDark),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = RedWarningDark)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Rounded.Delete, contentDescription = "حذف", modifier = Modifier.size(15.dp), tint = RedWarningDark)
+                            Text("حذف", fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+                        }
+                    }
 
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = { onViewDetails(invoice) },
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text("التفاصيل", fontSize = 11.sp)
-                                    }
-
-                                    Button(
-                                        onClick = { onViewDetails(invoice) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (invoice.progressPercent >= 1.0f) EmeraldSuccess else SkyBlueInfo
-                                        ),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(
-                                            text = if (invoice.progressPercent >= 1.0f) "تسوية وشطب" else "متابعة البيع",
-                                            color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
+                    // Details Button
+                    OutlinedButton(
+                        onClick = { onViewDetails(invoice) },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, DarkForestGreen),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DarkForestGreen)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Rounded.Info, contentDescription = "تفاصيل", modifier = Modifier.size(15.dp), tint = DarkForestGreen)
+                            Text("تفاصيل", fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
                         }
                     }
                 }

@@ -237,6 +237,16 @@ class AlwaRepository(private val database: AppDatabase) {
         addLog("طباعة فاتورة", "تمت طباعة الفاتورة ID: $invoiceId")
     }
 
+    suspend fun deleteImportInvoice(invoiceId: String) {
+        importDao.deleteById(invoiceId)
+        addLog("حذف إرسالية استيراد", "تم حذف الإرسالية ID: $invoiceId")
+    }
+
+    suspend fun deleteSalesInvoice(invoiceId: String) {
+        salesDao.deleteById(invoiceId)
+        addLog("حذف فاتورة بيع", "تم حذف الفاتورة ID: $invoiceId")
+    }
+
     suspend fun addLog(action: String, details: String) {
         val dateStr = SimpleDateFormat("HH:mm a", Locale.ENGLISH).format(Date())
         val log = AppLog(
@@ -246,5 +256,11 @@ class AlwaRepository(private val database: AppDatabase) {
             timestamp = dateStr
         )
         logDao.insert(log.toEntity())
+    }
+
+    suspend fun resetAllData() {
+        database.clearAllTables()
+        checkAndSeedInitialData()
+        addLog("إعادة ضبط النظام", "تمت تصفير كافة السجلات والبيانات بنجاح")
     }
 }

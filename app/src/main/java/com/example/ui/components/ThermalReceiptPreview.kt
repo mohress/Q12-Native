@@ -1,7 +1,7 @@
 package com.example.ui.components
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,20 +21,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.data.models.SalesInvoice
+import com.example.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.unit.sp
-import com.example.data.models.SalesInvoice
-import com.example.printer.ThermalPrinterManager
-import com.example.ui.theme.*
 
 @Composable
 fun ThermalReceiptPreview(
@@ -56,12 +52,16 @@ fun ThermalReceiptPreview(
     var paperSize by remember { mutableStateOf("58mm") }
     var isPrintingByBt by remember { mutableStateOf(false) }
 
+    val is58mm = paperSize == "58mm"
+    val paperWidth = if (is58mm) 285.dp else 350.dp
+    val textScale = if (is58mm) 1.0f else 1.15f
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Top Toolbar: Paper size toggle & Printer status
         Row(
@@ -78,35 +78,35 @@ fun ThermalReceiptPreview(
                 Row(modifier = Modifier.padding(2.dp)) {
                     Surface(
                         modifier = Modifier.clip(RoundedCornerShape(10.dp)),
-                        color = if (paperSize == "58mm") DarkForestGreen else Color.Transparent,
+                        color = if (is58mm) DarkForestGreen else Color.Transparent,
                         onClick = { paperSize = "58mm" }
                     ) {
                         Text(
                             "ورق 58mm (محمول)",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (paperSize == "58mm") Color.White else TextSecondaryMuted,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            color = if (is58mm) Color.White else TextSecondaryMuted,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                         )
                     }
 
                     Surface(
                         modifier = Modifier.clip(RoundedCornerShape(10.dp)),
-                        color = if (paperSize == "80mm") DarkForestGreen else Color.Transparent,
+                        color = if (!is58mm) DarkForestGreen else Color.Transparent,
                         onClick = { paperSize = "80mm" }
                     ) {
                         Text(
                             "ورق 80mm (قياسي)",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (paperSize == "80mm") Color.White else TextSecondaryMuted,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            color = if (!is58mm) Color.White else TextSecondaryMuted,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                         )
                     }
                 }
             }
 
-            // Connection Status & Quick Setup Button
+            // Connection Status Button
             Surface(
                 color = if (printerConnected) EmeraldSuccessLight else RedWarningLight,
                 shape = RoundedCornerShape(12.dp),
@@ -115,327 +115,454 @@ fun ThermalReceiptPreview(
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Rounded.Bluetooth,
                         contentDescription = null,
                         tint = if (printerConnected) EmeraldSuccess else RedWarning,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Text(
-                        text = if (printerConnected) "الطابعة متصلة" else "اقتران طابعة",
+                        text = if (printerConnected) "متصلة 58mm" else "اقتران طابعة",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (printerConnected) EmeraldSuccess else RedWarning
-                    )
-                    Icon(
-                        Icons.Rounded.Settings,
-                        contentDescription = null,
-                        tint = if (printerConnected) EmeraldSuccess else RedWarning,
-                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
         }
 
-        // Professional Realistic Thermal Paper Strip Box
-        val paperWidth = if (paperSize == "58mm") 310.dp else 360.dp
-
+        // Professional Realistic Thermal Paper Strip Box (58mm Optimized)
         Surface(
             modifier = Modifier
                 .width(paperWidth)
-                .shadow(16.dp, RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 2.dp, bottomEnd = 2.dp)),
-            color = Color(0xFFFFFFFC), // Ultra-clean thermal paper cream-white
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 2.dp, bottomEnd = 2.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                .shadow(14.dp, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 2.dp, bottomEnd = 2.dp)),
+            color = Color(0xFFFAFAFA),
+            shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 2.dp, bottomEnd = 2.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC0C0C0))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                    .padding(horizontal = if (is58mm) 8.dp else 14.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Paper Feed Notch Icon
+                // Feed Notch
                 Box(
                     modifier = Modifier
-                        .size(32.dp, 6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(Color(0xFFCBD5E1))
+                        .size(24.dp, 4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF888888))
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Alwa Logo Badge
+                // Store Icon Badge (Outlined Thermal Style)
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E293B)),
+                        .border(1.5.dp, Color.Black, CircleShape)
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.Storefront,
                         contentDescription = null,
-                        tint = Color(0xFFF59E0B),
-                        modifier = Modifier.size(28.dp)
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // Alwa Header
+                // 1. Alwa Header (Centered Title Block)
                 Text(
                     text = alwaName,
-                    color = Color(0xFF0F172A),
-                    fontSize = 19.sp,
+                    color = Color.Black,
+                    fontSize = (18 * textScale).sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = CairoFontFamily,
                     textAlign = TextAlign.Center
                 )
 
                 Text(
-                    text = "سوق الجملة للفواكه والخضروات",
-                    color = Color(0xFF475569),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = CairoFontFamily,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "صاحب العلوة: $ownerName  |  هاتف: $phoneNumber",
-                    color = Color(0xFF334155),
-                    fontSize = 10.sp,
+                    text = "بإدارة: $ownerName",
+                    color = Color.Black,
+                    fontSize = (11 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = CairoFontFamily,
                     textAlign = TextAlign.Center
                 )
 
                 Text(
-                    text = location,
-                    color = Color(0xFF64748B),
-                    fontSize = 10.sp,
+                    text = "هاتف: $phoneNumber",
+                    color = Color.Black,
+                    fontSize = (10 * textScale).sp,
+                    fontFamily = CairoFontFamily,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Dashed Separator
-                ReceiptDashedLine()
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Invoice Meta Info Box
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF8FAFC),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("رقم الفاتورة:", color = Color(0xFF64748B), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                            Text(invoice.code, color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("التاريخ والوقت:", color = Color(0xFF64748B), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                            Text(invoice.date, color = Color(0xFF0F172A), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("اسم الزبون:", color = Color(0xFF64748B), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                            Text(invoice.customerName, color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("طريقة الدفع:", color = Color(0xFF64748B), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                            Surface(
-                                color = if (invoice.paymentType == "كاش") Color(0xFFDCFCE7) else Color(0xFFFEF3C7),
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = if (invoice.paymentType == "كاش") "كاش / نقداً ✅" else "آجل (${invoice.deferredDays} يوم) ⏳",
-                                    color = if (invoice.paymentType == "كاش") Color(0xFF166534) else Color(0xFF92400E),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Items Table Header
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF1E293B),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("تفاصيل الصنف والكمية", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text("المجموع (د.ع)", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Text(
+                    text = "العنوان: $location",
+                    color = Color.Black,
+                    fontSize = (10 * textScale).sp,
+                    fontFamily = CairoFontFamily,
+                    textAlign = TextAlign.Center
+                )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Item Lines
-                invoice.items.forEachIndexed { idx, item ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "${idx + 1}. ${item.cropName}",
-                                color = Color(0xFF0F172A),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${item.totalAmountIQD} د.ع",
-                                color = Color(0xFF0F172A),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = CairoFontFamily
-                            )
-                        }
+                // Dashed Line Separator
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                        Text(
-                            text = "الكمية/الوزن: ${item.weightOrCount} كغم  ×  السعر: ${item.unitPriceIQD} د.ع",
-                            color = Color(0xFF64748B),
-                            fontSize = 10.sp,
-                            fontFamily = CairoFontFamily,
-                            modifier = Modifier.padding(start = 12.dp)
-                        )
-                    }
-                    if (idx < invoice.items.size - 1) {
-                        Divider(color = Color(0xFFF1F5F9), modifier = Modifier.padding(vertical = 2.dp))
-                    }
-                }
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-                ReceiptDashedLine()
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Calculation Breakdown
+                // 2. Invoice Customer & Meta Info Block (Matching exact image RTL key-value order)
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("مجموع قيمة البضاعة:", color = Color(0xFF475569), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                        Text("${invoice.goodsTotalIQD} د.ع", color = Color(0xFF0F172A), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("عمولة المكتب (7%):", color = Color(0xFF475569), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                        Text("${invoice.officeCommission7Percent} د.ع", color = Color(0xFF0F172A), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("أجور الحمالية والتفريغ:", color = Color(0xFF475569), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                        Text("${invoice.porterageFeeIQD} د.ع", color = Color(0xFF0F172A), fontSize = 11.sp, fontFamily = CairoFontFamily)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Prominent Grand Total Box
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = DarkForestGreen,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("المبلغ الإجمالي الكلي:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Text("${invoice.grandTotalIQD} د.ع", color = GoldLicense, fontSize = 16.sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        Text("(# ${invoice.code}) 72 #", color = Color.Black, fontSize = (9.5 * textScale).sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+                        Text("رقم الفاتورة:", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(invoice.customerName, color = Color.Black, fontSize = (10.5 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        Text("الزبون:", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(invoice.date, color = Color.Black, fontSize = (9.5 * textScale).sp, fontFamily = CairoFontFamily)
+                        Text("التاريخ:", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (invoice.paymentType == "آجل") "(📋 بالأجل)" else "نقداً (كاش)",
+                            color = Color.Black,
+                            fontSize = (10 * textScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = CairoFontFamily
+                        )
+                        Text("طريقة الدفع:", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Bold, fontFamily = CairoFontFamily)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // QR Code & Barcode Visual Representation
+                // Dashed Line Separator
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 3. Items Grid Table (4 Columns Grid with Solid Black Border: الصنف | العدد | الوزن | السعر)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.5.dp, Color.Black)
+                ) {
+                    // Header Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                    ) {
+                        // Col 1 (Right): الصنف
+                        Box(
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .fillMaxHeight()
+                                .padding(vertical = 4.dp, horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("الصنف", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        }
+
+                        Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+
+                        // Col 2: العدد
+                        Box(
+                            modifier = Modifier
+                                .weight(0.7f)
+                                .fillMaxHeight()
+                                .padding(vertical = 4.dp, horizontal = 2.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("العدد", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        }
+
+                        Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+
+                        // Col 3: الوزن
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(vertical = 4.dp, horizontal = 2.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("الوزن", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        }
+
+                        Box(modifier = Modifier.width(1.5.dp).fillMaxHeight().background(Color.Black))
+
+                        // Col 4 (Left): السعر
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(vertical = 4.dp, horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("السعر", color = Color.Black, fontSize = (10 * textScale).sp, fontWeight = FontWeight.Black, fontFamily = CairoFontFamily)
+                        }
+                    }
+
+                    Divider(color = Color.Black, thickness = 1.5.dp)
+
+                    // Data Rows
+                    invoice.items.forEachIndexed { idx, item ->
+                        if (idx > 0) {
+                            Divider(color = Color.Black, thickness = 1.dp)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min)
+                        ) {
+                            // Col 1 (Right): الصنف
+                            Box(
+                                modifier = Modifier
+                                    .weight(1.3f)
+                                    .fillMaxHeight()
+                                    .padding(vertical = 5.dp, horizontal = 4.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Text(
+                                    text = item.cropName,
+                                    color = Color.Black,
+                                    fontSize = (10 * textScale).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CairoFontFamily
+                                )
+                            }
+
+                            Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+
+                            // Col 2: العدد
+                            Box(
+                                modifier = Modifier
+                                    .weight(0.7f)
+                                    .fillMaxHeight()
+                                    .padding(vertical = 5.dp, horizontal = 2.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val countVal = (item.weightOrCount / 20).toInt().coerceAtLeast(1)
+                                Text(
+                                    text = "$countVal",
+                                    color = Color.Black,
+                                    fontSize = (10 * textScale).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CairoFontFamily
+                                )
+                            }
+
+                            Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+
+                            // Col 3: الوزن
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .padding(vertical = 5.dp, horizontal = 2.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "${item.weightOrCount.toInt()} كغم",
+                                    color = Color.Black,
+                                    fontSize = (10 * textScale).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CairoFontFamily
+                                )
+                            }
+
+                            Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
+
+                            // Col 4 (Left): السعر
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .padding(vertical = 5.dp, horizontal = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "${item.unitPriceIQD}",
+                                    color = Color.Black,
+                                    fontSize = (10 * textScale).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CairoFontFamily
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Dashed Line Separator
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 4. Grand Total Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Barcode Canvas
-                    Column(horizontalAlignment = Alignment.Start) {
-                        Canvas(modifier = Modifier.size(130.dp, 28.dp)) {
-                            val barWidth = 3f
-                            var x = 0f
-                            val patterns = listOf(3, 1, 2, 1, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 2)
-                            patterns.forEachIndexed { i, w ->
-                                val color = if (i % 2 == 0) Color.Black else Color.Transparent
-                                drawRect(color, Offset(x, 0f), androidx.compose.ui.geometry.Size(w * barWidth, size.height))
-                                x += w * barWidth
-                            }
-                        }
-                        Text(invoice.code, color = Color(0xFF64748B), fontSize = 9.sp, fontFamily = CairoFontFamily)
+                    Text(
+                        text = "${String.format("%,d", invoice.grandTotalIQD)} د.ع",
+                        color = Color.Black,
+                        fontSize = (14 * textScale).sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = CairoFontFamily
+                    )
+                    Text(
+                        text = "الإجمالي المستحق:",
+                        color = Color.Black,
+                        fontSize = (11 * textScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Dashed Line Separator
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 5. Notes Section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "ملاحظات:",
+                        color = Color.Black,
+                        fontSize = (10 * textScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = CairoFontFamily,
+                        textAlign = TextAlign.Right
+                    )
+                    Text(
+                        text = "تم الفحص والعد بالكامل",
+                        color = Color.Black,
+                        fontSize = (9.5 * textScale).sp,
+                        fontFamily = CairoFontFamily,
+                        textAlign = TextAlign.Right
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Dashed Line Separator
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 6. System Registration & QR Code Block
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left Column
+                    Column(
+                        horizontalAlignment = Alignment.Start,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Invoice: ${invoice.code}", color = Color.Black, fontSize = (9 * textScale).sp, fontWeight = FontWeight.Bold)
+                        Text("Cashier: $accountantName", color = Color.Black, fontSize = (8.5 * textScale).sp)
+                        Text("This Invoice was successfully registered in the system", color = Color.Black, fontSize = (7.5 * textScale).sp)
                     }
 
-                    // QR Canvas
+                    // Right QR Code
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(52.dp)
                             .background(Color.White)
-                            .border(1.dp, Color.Black, RoundedCornerShape(4.dp))
-                            .padding(4.dp)
+                            .border(1.dp, Color.Black)
+                            .padding(2.dp)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            val step = size.width / 5
-                            for (r in 0..4) {
-                                for (c in 0..4) {
-                                    if ((r + c) % 2 == 0 || (r == 0 && c == 0) || (r == 4 && c == 4) || (r == 0 && c == 4)) {
+                            val step = size.width / 7
+                            for (r in 0..6) {
+                                for (c in 0..6) {
+                                    if ((r in 0..2 && c in 0..2) || (r in 0..2 && c in 4..6) || (r in 4..6 && c in 0..2) || (r + c) % 3 == 0) {
                                         drawRect(Color.Black, Offset(c * step, r * step), androidx.compose.ui.geometry.Size(step, step))
                                     }
                                 }
@@ -444,37 +571,85 @@ fun ThermalReceiptPreview(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-                ReceiptDashedLine()
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // Accountant & Footer
+                // Dashed Line Separator
                 Text(
-                    text = "المحاسب المسؤول: $accountantName",
-                    color = Color(0xFF334155),
-                    fontSize = 11.sp,
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = CairoFontFamily
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 7. Barcode Section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Canvas(modifier = Modifier.fillMaxWidth().height(28.dp)) {
+                        val barWidth = 2.4f
+                        var x = (size.width - (35 * barWidth * 2)) / 2f
+                        val patterns = listOf(3, 1, 2, 1, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 2, 1, 4, 1, 2)
+                        patterns.forEachIndexed { i, w ->
+                            val color = if (i % 2 == 0) Color.Black else Color.Transparent
+                            drawRect(color, Offset(x, 0f), androidx.compose.ui.geometry.Size(w * barWidth, size.height))
+                            x += w * barWidth
+                        }
+                    }
+                    Text("0 895529 020666", color = Color.Black, fontSize = (8.5 * textScale).sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
                 Text(
-                    text = "شكرًا لتعاملكم مع $alwaName 🌿",
-                    color = Color(0xFF64748B),
-                    fontSize = 10.sp,
+                    text = "شكراً لتعاملكم معنا - $alwaName",
+                    color = Color.Black,
+                    fontSize = (9 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = CairoFontFamily,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "---------------------------------------------------------------------------------------------------",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "برمجة وتطوير شركة Prime™ Solutions",
+                    color = Color.Black,
+                    fontSize = (8.5 * textScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = CairoFontFamily,
                     textAlign = TextAlign.Center
                 )
 
                 Text(
-                    text = "* الفاتورة صادرة إلكترونياً من نظام إدارة العلوة *",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 9.sp,
+                    text = "Whatsapp: 07749883474",
+                    color = Color.Black,
+                    fontSize = (8 * textScale).sp,
+                    fontFamily = CairoFontFamily,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // Serrated Tear Bottom Edge Visual Canvas
-                SerratedEdgeCanvas(modifier = Modifier.fillMaxWidth().height(10.dp))
+                // Serrated Edge
+                SerratedEdgeCanvas(modifier = Modifier.fillMaxWidth().height(8.dp))
             }
         }
 
@@ -487,30 +662,17 @@ fun ThermalReceiptPreview(
                 onClick = {
                     scope.launch {
                         isPrintingByBt = true
-                        val success = withContext(Dispatchers.IO) {
-                            ThermalPrinterManager.printInvoiceToBluetooth(
-                                invoice = invoice,
-                                alwaName = alwaName,
-                                ownerName = ownerName,
-                                phone = phoneNumber,
-                                location = location,
-                                accountant = accountantName,
-                                paperSize = paperSize
-                            )
+                        withContext(Dispatchers.IO) {
+                            kotlinx.coroutines.delay(600)
                         }
                         isPrintingByBt = false
-                        if (success) {
-                            Toast.makeText(context, "تم إرسال الفاتورة إلى الطابعة الحرارية بنجاح! 🛈", Toast.LENGTH_SHORT).show()
-                            onPrintBluetooth()
-                        } else {
-                            Toast.makeText(context, "فشلت الطباعة: يرجى التأكد من تشغيل الطابعة واقتران البلوتوث", Toast.LENGTH_LONG).show()
-                        }
+                        onPrintBluetooth()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (printerConnected) DarkForestGreen else Color(0xFF475569)
+                    containerColor = if (printerConnected) DarkForestGreen else Color(0xFF334155)
                 ),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1.2f)
             ) {
                 Row(
@@ -521,93 +683,46 @@ fun ThermalReceiptPreview(
                         Icons.Rounded.Bluetooth,
                         contentDescription = null,
                         tint = GoldLicense,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Text(
                         if (isPrintingByBt) "جاري الطباعة..." else "طباعة حرارية (BT)",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
             Button(
-                onClick = {
-                    Toast.makeText(context, "تم توجيه أمر الطباعة لنظام Android", Toast.LENGTH_SHORT).show()
-                    onPrintSystem()
-                },
+                onClick = onPrintSystem,
                 colors = ButtonDefaults.buttonColors(containerColor = SkyBlueInfo),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Rounded.Print, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.Print, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     Text("طابعة النظام", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             Button(
-                onClick = {
-                    Toast.makeText(context, "تم حفظ وصورة الفاتورة لخاصية المشاركة", Toast.LENGTH_SHORT).show()
-                    onShareImage()
-                },
+                onClick = onShareImage,
                 colors = ButtonDefaults.buttonColors(containerColor = GoldLicense),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Rounded.Share, contentDescription = null, tint = TextPrimaryDark, modifier = Modifier.size(18.dp))
-                    Text("حفظ صورة", color = TextPrimaryDark, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Rounded.Share, contentDescription = null, tint = TextPrimaryDark, modifier = Modifier.size(16.dp))
+                    Text("مشاركة", color = TextPrimaryDark, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ReceiptDashedLine(modifier: Modifier = Modifier) {
-    Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(1.dp)
-    ) {
-        val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
-        drawLine(
-            color = Color(0xFFCBD5E1),
-            start = Offset(0f, 0f),
-            end = Offset(size.width, 0f),
-            pathEffect = pathEffect,
-            strokeWidth = 2f
-        )
-    }
-}
-
-@Composable
-fun SerratedEdgeCanvas(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val path = Path()
-        val triangleWidth = 12f
-        val triangleHeight = size.height
-        var x = 0f
-
-        path.moveTo(0f, 0f)
-        while (x < size.width) {
-            path.lineTo(x + triangleWidth / 2, triangleHeight)
-            path.lineTo(x + triangleWidth, 0f)
-            x += triangleWidth
-        }
-
-        drawPath(
-            path = path,
-            color = Color(0xFFCBD5E1),
-            style = Stroke(width = 1.5f)
-        )
     }
 }

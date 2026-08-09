@@ -32,6 +32,9 @@ fun StatsScreen(
     onOpenNewExpense: () -> Unit,
     onOpenNewLoss: () -> Unit,
     onDepositCash: () -> Unit,
+    onOpenProfitReportPreview: () -> Unit = {},
+    onOpenSalesAuditPreview: () -> Unit = {},
+    onOpenInventoryAuditPreview: () -> Unit = {},
     formatIQD: (Long) -> String,
     modifier: Modifier = Modifier
 ) {
@@ -78,7 +81,7 @@ fun StatsScreen(
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
-                                    onClick = { /* Report */ },
+                                    onClick = onOpenProfitReportPreview,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -88,7 +91,7 @@ fun StatsScreen(
                                 }
 
                                 OutlinedButton(
-                                    onClick = { /* Print Inventory */ },
+                                    onClick = onOpenSalesAuditPreview,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -98,13 +101,13 @@ fun StatsScreen(
                                 }
 
                                 Button(
-                                    onClick = { /* Print list */ },
+                                    onClick = onOpenInventoryAuditPreview,
                                     colors = ButtonDefaults.buttonColors(containerColor = MediumForestGreen),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Rounded.Print, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                        Text("قائمة جرد", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("جرد المخزون", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -138,7 +141,7 @@ fun StatsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedButton(
-                                    onClick = { /* Report */ },
+                                    onClick = onOpenProfitReportPreview,
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
@@ -146,7 +149,7 @@ fun StatsScreen(
                                 }
 
                                 OutlinedButton(
-                                    onClick = { /* Print Inventory */ },
+                                    onClick = onOpenSalesAuditPreview,
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
@@ -154,12 +157,12 @@ fun StatsScreen(
                                 }
 
                                 Button(
-                                    onClick = { /* Print list */ },
+                                    onClick = onOpenInventoryAuditPreview,
                                     colors = ButtonDefaults.buttonColors(containerColor = MediumForestGreen),
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1.2f)
                                 ) {
-                                    Text("قائمة جرد", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("جرد المخزون", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

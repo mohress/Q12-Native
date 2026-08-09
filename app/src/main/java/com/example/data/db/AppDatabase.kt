@@ -16,7 +16,7 @@ import androidx.room.RoomDatabase
         AppLogEntity::class,
         AlwaSettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

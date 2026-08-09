@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
@@ -34,6 +37,26 @@ fun SplashScreen(
     onDismissSplash: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var progress by remember { mutableStateOf(0.1f) }
+
+    // Auto-dismiss splash screen after short initialization delay if not locked
+    LaunchedEffect(isLocked) {
+        if (!isLocked) {
+            progress = 0.3f
+            delay(300)
+            progress = 0.7f
+            delay(400)
+            progress = 1.0f
+            delay(300)
+            onDismissSplash()
+        }
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 300),
+        label = "SplashProgress"
+    )
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -231,9 +254,10 @@ fun SplashScreen(
                     )
 
                     Text(
-                        text = "جاري تهيئة الحسابات والمحاصيل...",
+                        text = "جاري فتح النظام المحاسبي تلقائياً...",
                         color = Color.White,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
                     )
 
                     // Diagnostic Panel
@@ -258,7 +282,7 @@ fun SplashScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "جاري فحص الذاكرة وتأمين البيئة...",
+                                    text = "جاري تجهيز بيانات المبيعات والمخزون...",
                                     color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
@@ -266,12 +290,12 @@ fun SplashScreen(
                             }
 
                             LinearProgressIndicator(
-                                progress = { 1.0f },
+                                progress = animatedProgress,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp)),
-                                color = EmeraldSuccess,
+                                color = GoldLicense,
                                 trackColor = Color.White.copy(alpha = 0.2f)
                             )
 
@@ -279,28 +303,34 @@ fun SplashScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("الحالة: مؤمن وجاهز 100%", color = MintGreen, fontSize = 10.sp)
-                                Text("Offline Secure", color = GoldLicense, fontSize = 10.sp)
+                                Text("الحالة: جاري الدخول تلقائياً...", color = MintGreen, fontSize = 10.sp)
+                                Text("${(animatedProgress * 100).toInt()}%", color = GoldLicense, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Button(
+                    OutlinedButton(
                         onClick = onDismissSplash,
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldLicense),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GoldLicense),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldLicense.copy(alpha = 0.6f)),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
-                            .height(48.dp)
+                            .height(44.dp)
                     ) {
-                        Text(
-                            text = "الدخول للنظام المحاسبي",
-                            color = TextPrimaryDark,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "دخول سريع ⚡",
+                                color = GoldLicense,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

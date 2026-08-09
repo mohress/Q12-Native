@@ -4,18 +4,21 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
 val CairoFontFamily = FontFamily(
-    Font(R.font.cairo, weight = FontWeight.Light),
-    Font(R.font.cairo, weight = FontWeight.Normal),
-    Font(R.font.cairo, weight = FontWeight.Medium),
-    Font(R.font.cairo, weight = FontWeight.SemiBold),
-    Font(R.font.cairo, weight = FontWeight.Bold),
-    Font(R.font.cairo, weight = FontWeight.ExtraBold),
-    Font(R.font.cairo, weight = FontWeight.Black)
+    Font(R.font.cairo, weight = FontWeight.Thin, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.ExtraLight, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.Light, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.Bold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.ExtraBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.cairo, weight = FontWeight.Black, loadingStrategy = FontLoadingStrategy.OptionalLocal)
 )
 
 val Typography = Typography(
